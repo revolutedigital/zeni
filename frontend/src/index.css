@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+body {
+  @apply bg-zeni-dark text-zeni-text min-h-screen;
+}
+
+/* Scrollbar customizada */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-zeni-dark;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-zeni-muted rounded-full;
+}
+
+/* Input focus */
+input:focus, textarea:focus {
+  @apply outline-none ring-2 ring-zeni-primary;
+}
