@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Send, Image, Bot, User, Sparkles, Shield, BookOpen, PiggyBank } from 'lucide-react'
 import { sendMessage, getChatHistory } from '../services/api'
+import ZeniMascot, { ZeniWelcome, ZeniLoading } from '../components/ZeniMascot'
 
 // Configuração dos agentes com cores e ícones
 const AGENTS = {
@@ -199,6 +200,12 @@ export default function Chat() {
       <div className="flex-1 overflow-y-auto space-y-4 mb-4">
         {showExamples && messages.length === 0 && (
           <div className="space-y-6">
+            {/* Zeni Welcome */}
+            <ZeniWelcome
+              title="Oi! Eu sou a Zeni!"
+              subtitle="Quer organizar? Fala comigo!"
+            />
+
             {/* Agentes Grid */}
             <div className="grid grid-cols-2 gap-3">
               {Object.entries(AGENTS).filter(([id]) => id !== 'registrar_vision').map(([id, agent]) => {
@@ -329,9 +336,9 @@ export default function Chat() {
         })}
 
         {loading && (
-          <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-zeni-primary/20 flex items-center justify-center">
-              <Bot size={18} className="text-zeni-primary animate-pulse" />
+          <div className="flex gap-3 items-center">
+            <div className="animate-pulse">
+              <ZeniMascot variant="thinking" size="md" />
             </div>
             <div className="bg-zeni-card rounded-xl px-4 py-2">
               <p className="text-zeni-muted">Pensando...</p>

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Versão compacta para ícones e favicon -->
+  <defs>
+    <linearGradient id="hairGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10B981" />
+      <stop offset="100%" style="stop-color:#059669" />
+    </linearGradient>
+    <linearGradient id="skinGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFDBB4" />
+      <stop offset="100%" style="stop-color:#F5C99D" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Circle -->
+  <circle cx="32" cy="32" r="30" fill="#1E293B"/>
+
+  <!-- Hair -->
+  <ellipse cx="32" cy="26" rx="18" ry="16" fill="url(#hairGrad)"/>
+  <path d="M14 26 Q14 42 22 48 L22 32 Q14 32 14 26" fill="url(#hairGrad)"/>
+  <path d="M50 26 Q50 42 42 48 L42 32 Q50 32 50 26" fill="url(#hairGrad)"/>
+
+  <!-- Face -->
+  <ellipse cx="32" cy="32" rx="14" ry="15" fill="url(#skinGrad)"/>
+
+  <!-- Bangs -->
+  <path d="M18 24 Q24 16 32 15 Q40 16 46 24 Q42 19 32 18 Q22 19 18 24" fill="url(#hairGrad)"/>
+
+  <!-- Eyes -->
+  <ellipse cx="26" cy="32" rx="3.5" ry="4" fill="#FFFFFF"/>
+  <ellipse cx="38" cy="32" rx="3.5" ry="4" fill="#FFFFFF"/>
+  <circle cx="27" cy="32.5" r="2" fill="#1E293B"/>
+  <circle cx="39" cy="32.5" r="2" fill="#1E293B"/>
+  <circle cx="27.5" cy="31.5" r="0.8" fill="#FFFFFF"/>
+  <circle cx="39.5" cy="31.5" r="0.8" fill="#FFFFFF"/>
+
+  <!-- Blush -->
+  <ellipse cx="21" cy="36" rx="3" ry="2" fill="#FFB5B5" opacity="0.5"/>
+  <ellipse cx="43" cy="36" rx="3" ry="2" fill="#FFB5B5" opacity="0.5"/>
+
+  <!-- Smile -->
+  <path d="M27 41 Q32 46 37 41" stroke="#D97706" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+  <!-- Body hint -->
+  <path d="M20 52 Q22 48 32 47 Q42 48 44 52 Q44 56 32 58 Q20 56 20 52" fill="#10B981"/>
+</svg>

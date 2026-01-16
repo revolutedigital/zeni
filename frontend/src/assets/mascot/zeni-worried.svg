@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Zeni preocupada - para alertas de orçamento -->
+  <defs>
+    <linearGradient id="bgGrad4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FBBF24;stop-opacity:0.15" />
+      <stop offset="100%" style="stop-color:#F59E0B;stop-opacity:0.08" />
+    </linearGradient>
+    <linearGradient id="hairGrad4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10B981" />
+      <stop offset="100%" style="stop-color:#059669" />
+    </linearGradient>
+    <linearGradient id="skinGrad4" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFDBB4" />
+      <stop offset="100%" style="stop-color:#F5C99D" />
+    </linearGradient>
+    <filter id="shadow4" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- Background - warmer tone for warning -->
+  <circle cx="100" cy="100" r="95" fill="url(#bgGrad4)" />
+  <circle cx="100" cy="100" r="85" fill="#1E293B" filter="url(#shadow4)"/>
+
+  <!-- Hair Back -->
+  <ellipse cx="100" cy="75" rx="52" ry="48" fill="url(#hairGrad4)"/>
+  <path d="M48 75 Q48 120 65 140 L65 95 Q48 95 48 75" fill="url(#hairGrad4)"/>
+  <path d="M152 75 Q152 120 135 140 L135 95 Q152 95 152 75" fill="url(#hairGrad4)"/>
+
+  <!-- Face -->
+  <ellipse cx="100" cy="95" rx="42" ry="45" fill="url(#skinGrad4)"/>
+
+  <!-- Hair Front -->
+  <path d="M58 70 Q70 45 100 42 Q130 45 142 70 Q135 55 100 52 Q65 55 58 70" fill="url(#hairGrad4)"/>
+  <path d="M65 72 Q75 60 90 58" stroke="#059669" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M135 72 Q125 60 110 58" stroke="#059669" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+  <!-- Eyebrows - Worried -->
+  <path d="M72 82 Q80 88 90 85" stroke="#047857" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M110 85 Q120 88 128 82" stroke="#047857" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Eyes - Worried look -->
+  <ellipse cx="80" cy="95" rx="10" ry="11" fill="#FFFFFF"/>
+  <ellipse cx="120" cy="95" rx="10" ry="11" fill="#FFFFFF"/>
+
+  <!-- Pupils - Looking to side worried -->
+  <circle cx="83" cy="97" r="6" fill="#1E293B"/>
+  <circle cx="123" cy="97" r="6" fill="#1E293B"/>
+
+  <!-- Eye shine -->
+  <circle cx="85" cy="94" r="2.5" fill="#FFFFFF"/>
+  <circle cx="125" cy="94" r="2.5" fill="#FFFFFF"/>
+
+  <!-- Sweat drop -->
+  <path d="M145 75 Q150 85 145 95 Q140 85 145 75" fill="#3B82F6" opacity="0.7"/>
+
+  <!-- Blush - lighter when worried -->
+  <ellipse cx="65" cy="105" rx="8" ry="5" fill="#FFB5B5" opacity="0.3"/>
+  <ellipse cx="135" cy="105" rx="8" ry="5" fill="#FFB5B5" opacity="0.3"/>
+
+  <!-- Nose -->
+  <path d="M100 100 Q103 108 100 112" stroke="#E5B897" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+  <!-- Worried mouth -->
+  <path d="M88 125 Q100 118 112 125" stroke="#D97706" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- Body hint -->
+  <path d="M60 150 Q65 140 100 138 Q135 140 140 150 Q140 160 100 165 Q60 160 60 150" fill="#10B981"/>
+  <path d="M90 140 L100 150 L110 140" stroke="#059669" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+  <!-- Warning triangle -->
+  <g transform="translate(150, 45)">
+    <path d="M0 -18 L18 15 L-18 15 Z" fill="#FBBF24" stroke="#F59E0B" stroke-width="2"/>
+    <text x="0" y="8" text-anchor="middle" fill="#92400E" font-size="20" font-weight="bold" font-family="Arial">!</text>
+  </g>
+
+  <!-- Worry lines -->
+  <g stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round" opacity="0.4">
+    <path d="M35 55 Q40 58 35 61"/>
+    <path d="M30 60 Q35 63 30 66"/>
+  </g>
+</svg>

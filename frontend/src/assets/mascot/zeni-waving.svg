@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200" fill="none">
+  <!-- Zeni acenando - para onboarding e boas-vindas -->
+  <defs>
+    <linearGradient id="bgGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10B981;stop-opacity:0.15" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:0.05" />
+    </linearGradient>
+    <linearGradient id="hair" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10B981" />
+      <stop offset="100%" style="stop-color:#059669" />
+    </linearGradient>
+    <linearGradient id="skin" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFDBB4" />
+      <stop offset="100%" style="stop-color:#F5C99D" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- Background glow -->
+  <ellipse cx="120" cy="110" rx="110" ry="95" fill="url(#bgGlow)"/>
+
+  <!-- Waving Arm (behind body) -->
+  <g filter="url(#shadow)">
+    <!-- Upper arm -->
+    <path d="M165 130 Q180 100 195 70" stroke="url(#skin)" stroke-width="20" stroke-linecap="round" fill="none"/>
+    <!-- Hand -->
+    <circle cx="195" cy="65" r="14" fill="url(#skin)"/>
+    <!-- Fingers -->
+    <path d="M188 52 L185 42" stroke="url(#skin)" stroke-width="5" stroke-linecap="round"/>
+    <path d="M195 50 L195 38" stroke="url(#skin)" stroke-width="5" stroke-linecap="round"/>
+    <path d="M202 52 L206 42" stroke="url(#skin)" stroke-width="5" stroke-linecap="round"/>
+    <path d="M207 58 L215 52" stroke="url(#skin)" stroke-width="5" stroke-linecap="round"/>
+  </g>
+
+  <!-- Body/Shirt -->
+  <path d="M70 155 Q80 140 120 135 Q160 140 170 155 Q175 180 120 190 Q65 180 70 155" fill="#10B981" filter="url(#shadow)"/>
+  <!-- Collar -->
+  <path d="M105 140 L120 155 L135 140" stroke="#059669" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- Shirt detail -->
+  <circle cx="120" cy="165" r="4" fill="#059669" opacity="0.5"/>
+
+  <!-- Left Arm (resting) -->
+  <path d="M75 155 Q55 165 50 175" stroke="url(#skin)" stroke-width="18" stroke-linecap="round" fill="none"/>
+  <circle cx="48" cy="178" r="10" fill="url(#skin)"/>
+
+  <!-- Neck -->
+  <rect x="108" y="125" width="24" height="15" rx="5" fill="url(#skin)"/>
+
+  <!-- Hair Back -->
+  <ellipse cx="120" cy="70" rx="55" ry="50" fill="url(#hair)"/>
+  <path d="M65 70 Q65 120 85 145 L85 95 Q65 95 65 70" fill="url(#hair)"/>
+  <path d="M175 70 Q175 120 155 145 L155 95 Q175 95 175 70" fill="url(#hair)"/>
+
+  <!-- Face -->
+  <ellipse cx="120" cy="90" rx="45" ry="48" fill="url(#skin)" filter="url(#shadow)"/>
+
+  <!-- Hair Front - Bangs -->
+  <path d="M75 65 Q90 38 120 35 Q150 38 165 65 Q155 48 120 45 Q85 48 75 65" fill="url(#hair)"/>
+  <path d="M82 68 Q95 54 110 52" stroke="#059669" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M158 68 Q145 54 130 52" stroke="#059669" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Eyebrows - Happy/Excited -->
+  <path d="M92 75 Q102 70 112 75" stroke="#047857" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M128 75 Q138 70 148 75" stroke="#047857" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- Eyes - Happy/Closed -->
+  <path d="M95 90 Q102 82 112 90" stroke="#1E293B" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M128 90 Q135 82 145 90" stroke="#1E293B" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- Blush -->
+  <ellipse cx="85" cy="100" rx="10" ry="6" fill="#FFB5B5" opacity="0.5"/>
+  <ellipse cx="155" cy="100" rx="10" ry="6" fill="#FFB5B5" opacity="0.5"/>
+
+  <!-- Big Happy Smile -->
+  <path d="M100 112 Q120 130 140 112" stroke="#D97706" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M105 114 Q120 125 135 114" fill="#FFFFFF"/>
+
+  <!-- Speech bubble with "Oi!" -->
+  <g transform="translate(180, 20)">
+    <path d="M0 30 Q0 0 30 0 L50 0 Q80 0 80 30 L80 45 Q80 60 50 60 L25 60 L15 75 L20 60 L15 60 Q0 60 0 45 Z" fill="#FFFFFF" filter="url(#shadow)"/>
+    <text x="40" y="40" text-anchor="middle" fill="#10B981" font-size="20" font-weight="bold" font-family="Inter, Arial, sans-serif">Oi!</text>
+  </g>
+
+  <!-- Sparkles around -->
+  <g fill="#10B981">
+    <path d="M35 40 L38 48 L46 51 L38 54 L35 62 L32 54 L24 51 L32 48 Z" opacity="0.7"/>
+    <path d="M200 130 L202 135 L207 137 L202 139 L200 144 L198 139 L193 137 L198 135 Z" opacity="0.6"/>
+    <circle cx="45" cy="75" r="3" opacity="0.5"/>
+    <circle cx="30" cy="120" r="2" opacity="0.4"/>
+  </g>
+
+  <!-- Motion lines for waving hand -->
+  <g stroke="#10B981" stroke-width="2" stroke-linecap="round" opacity="0.6">
+    <path d="M210 55 Q220 50 225 55"/>
+    <path d="M212 65 Q225 62 228 68"/>
+    <path d="M210 75 Q222 75 225 80"/>
+  </g>
+</svg>
