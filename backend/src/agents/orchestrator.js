@@ -74,6 +74,12 @@ const CFO_PATTERNS = [
   /\bcomparativo\b/i,
   /\besse m[êe]s\b/i,
   /\bm[êe]s passado\b/i,
+  // Perguntas sobre período/ano específico
+  /\b(em|no|de|ano|total)\s+(20[2-3][0-9])\b/i,
+  /\b(20[2-3][0-9])\s+(todo|inteiro|completo)\b/i,
+  /\bgastei.*(20[2-3][0-9])\b/i,
+  /\b(20[2-3][0-9]).*gastei\b/i,
+  /\bao total\b/i,
 ];
 
 // ============================================

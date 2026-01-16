@@ -9,11 +9,28 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 router.use(authMiddleware);
 
+// Detectar se a pergunta menciona um ano ou período específico
+function detectPeriodFromMessage(message) {
+  const msg = message?.toLowerCase() || '';
+
+  // Detectar ano específico (2020-2030)
+  const yearMatch = msg.match(/\b(20[2-3][0-9])\b/);
+  const requestedYear = yearMatch ? parseInt(yearMatch[1]) : null;
+
+  // Detectar se é pergunta sobre "total" ou "ano todo"
+  const isYearlyQuery = /\b(ano|total|anual|tudo|todos?)\b/.test(msg) && requestedYear;
+
+  return { requestedYear, isYearlyQuery };
+}
+
 // Buscar contexto do usuário para os agentes
-async function getUserContext(userId) {
+async function getUserContext(userId, message = '') {
   const now = new Date();
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
+
+  // Detectar se pergunta sobre período específico
+  const { requestedYear, isYearlyQuery } = detectPeriodFromMessage(message);
 
   // Total de despesas do mês
   const expensesResult = await pool.query(`
@@ -23,6 +40,16 @@ async function getUserContext(userId) {
       AND EXTRACT(MONTH FROM date) = $2
       AND EXTRACT(YEAR FROM date) = $3
       AND type = 'expense'
+  `, [userId, month, year]);
+
+  // Total de receitas do mês
+  const incomeResult = await pool.query(`
+    SELECT COALESCE(SUM(amount), 0) as total
+    FROM transactions
+    WHERE user_id = $1
+      AND EXTRACT(MONTH FROM date) = $2
+      AND EXTRACT(YEAR FROM date) = $3
+      AND type = 'income'
   `, [userId, month, year]);
 
   // Total orçado no mês
@@ -71,6 +98,7 @@ async function getUserContext(userId) {
   `, [userId]);
 
   const expenses = parseFloat(expensesResult.rows[0].total);
+  const income = parseFloat(incomeResult.rows[0].total);
   const totalBudget = parseFloat(budgetResult.rows[0].total);
   const remaining = totalBudget - expenses;
 
@@ -93,17 +121,88 @@ async function getUserContext(userId) {
     remaining: parseFloat(row.budget) - parseFloat(row.spent)
   }));
 
-  return {
+  // Construir contexto base
+  const context = {
     month,
     year,
     totalBudget,
     expenses,
+    income,
+    balance: income - expenses,
     remaining,
     percentUsed: totalBudget > 0 ? Math.round((expenses / totalBudget) * 100) : 0,
     byCategory: formattedByCategory,
     recentTransactions: recent.rows,
     budgetAlerts
   };
+
+  // Se perguntou sobre um ano específico, adicionar dados históricos
+  if (requestedYear || isYearlyQuery) {
+    const targetYear = requestedYear || year;
+
+    // Total do ano inteiro
+    const yearlyExpenses = await pool.query(`
+      SELECT COALESCE(SUM(amount), 0) as total
+      FROM transactions
+      WHERE user_id = $1
+        AND EXTRACT(YEAR FROM date) = $2
+        AND type = 'expense'
+    `, [userId, targetYear]);
+
+    const yearlyIncome = await pool.query(`
+      SELECT COALESCE(SUM(amount), 0) as total
+      FROM transactions
+      WHERE user_id = $1
+        AND EXTRACT(YEAR FROM date) = $2
+        AND type = 'income'
+    `, [userId, targetYear]);
+
+    // Gastos por categoria no ano
+    const yearlyByCategory = await pool.query(`
+      SELECT
+        c.name,
+        COALESCE(SUM(t.amount), 0) as spent
+      FROM categories c
+      LEFT JOIN transactions t ON t.category_id = c.id
+        AND t.user_id = $1
+        AND EXTRACT(YEAR FROM t.date) = $2
+        AND t.type = 'expense'
+      WHERE c.type IN ('expense', 'both')
+      GROUP BY c.name
+      HAVING COALESCE(SUM(t.amount), 0) > 0
+      ORDER BY COALESCE(SUM(t.amount), 0) DESC
+    `, [userId, targetYear]);
+
+    // Gastos por mês no ano
+    const monthlyBreakdown = await pool.query(`
+      SELECT
+        EXTRACT(MONTH FROM date) as month,
+        COALESCE(SUM(amount), 0) as expenses
+      FROM transactions
+      WHERE user_id = $1
+        AND EXTRACT(YEAR FROM date) = $2
+        AND type = 'expense'
+      GROUP BY EXTRACT(MONTH FROM date)
+      ORDER BY month
+    `, [userId, targetYear]);
+
+    context.yearlyData = {
+      year: targetYear,
+      totalExpenses: parseFloat(yearlyExpenses.rows[0].total),
+      totalIncome: parseFloat(yearlyIncome.rows[0].total),
+      balance: parseFloat(yearlyIncome.rows[0].total) - parseFloat(yearlyExpenses.rows[0].total),
+      byCategory: yearlyByCategory.rows.map(row => ({
+        name: row.name,
+        spent: parseFloat(row.spent)
+      })),
+      byMonth: monthlyBreakdown.rows.map(row => ({
+        month: parseInt(row.month),
+        expenses: parseFloat(row.expenses)
+      }))
+    };
+  }
+
+  return context;
 }
 
 // Chat com IA
@@ -112,8 +211,8 @@ router.post('/', upload.single('image'), async (req, res) => {
     const { message } = req.body;
     const hasImage = !!req.file;
 
-    // Buscar contexto
-    const context = await getUserContext(req.userId);
+    // Buscar contexto (passando a mensagem para detectar período)
+    const context = await getUserContext(req.userId, message);
 
     // Preparar contexto para o agente
     const agentContext = {
