@@ -201,4 +201,92 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// DEBUG: Verificar totais por ano
+router.get('/debug/yearly/:year', async (req, res) => {
+  try {
+    const { year } = req.params;
+
+    // Total de gastos no ano
+    const totalExpenses = await pool.query(`
+      SELECT COALESCE(SUM(amount), 0) as total, COUNT(*) as count
+      FROM transactions
+      WHERE user_id = $1 AND EXTRACT(YEAR FROM date) = $2 AND type = 'expense'
+    `, [req.userId, year]);
+
+    // Total de receitas no ano
+    const totalIncome = await pool.query(`
+      SELECT COALESCE(SUM(amount), 0) as total, COUNT(*) as count
+      FROM transactions
+      WHERE user_id = $1 AND EXTRACT(YEAR FROM date) = $2 AND type = 'income'
+    `, [req.userId, year]);
+
+    // Gastos por mês
+    const byMonth = await pool.query(`
+      SELECT
+        EXTRACT(MONTH FROM date) as month,
+        SUM(amount) as total,
+        COUNT(*) as count
+      FROM transactions
+      WHERE user_id = $1 AND EXTRACT(YEAR FROM date) = $2 AND type = 'expense'
+      GROUP BY EXTRACT(MONTH FROM date)
+      ORDER BY month
+    `, [req.userId, year]);
+
+    // Gastos por categoria
+    const byCategory = await pool.query(`
+      SELECT
+        c.name,
+        SUM(t.amount) as total,
+        COUNT(*) as count
+      FROM transactions t
+      LEFT JOIN categories c ON t.category_id = c.id
+      WHERE t.user_id = $1 AND EXTRACT(YEAR FROM t.date) = $2 AND t.type = 'expense'
+      GROUP BY c.name
+      ORDER BY total DESC
+    `, [req.userId, year]);
+
+    // Algumas transações de exemplo (maiores valores)
+    const samples = await pool.query(`
+      SELECT amount, description, date, type,
+             (SELECT name FROM categories WHERE id = t.category_id) as category
+      FROM transactions t
+      WHERE user_id = $1 AND EXTRACT(YEAR FROM date) = $2
+      ORDER BY amount DESC
+      LIMIT 20
+    `, [req.userId, year]);
+
+    res.json({
+      year: parseInt(year),
+      expenses: {
+        total: parseFloat(totalExpenses.rows[0].total),
+        count: parseInt(totalExpenses.rows[0].count)
+      },
+      income: {
+        total: parseFloat(totalIncome.rows[0].total),
+        count: parseInt(totalIncome.rows[0].count)
+      },
+      byMonth: byMonth.rows.map(r => ({
+        month: parseInt(r.month),
+        total: parseFloat(r.total),
+        count: parseInt(r.count)
+      })),
+      byCategory: byCategory.rows.map(r => ({
+        name: r.name,
+        total: parseFloat(r.total),
+        count: parseInt(r.count)
+      })),
+      topTransactions: samples.rows.map(r => ({
+        amount: parseFloat(r.amount),
+        description: r.description,
+        date: r.date,
+        type: r.type,
+        category: r.category
+      }))
+    });
+  } catch (error) {
+    console.error('Erro no debug:', error);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
 export default router;
