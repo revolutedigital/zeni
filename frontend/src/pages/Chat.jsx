@@ -61,6 +61,99 @@ function announce(message) {
   }
 }
 
+// Função para renderizar markdown básico
+function renderMarkdown(text) {
+  if (!text) return null
+
+  // Dividir em linhas para processar listas
+  const lines = text.split('\n')
+  const elements = []
+  let currentList = []
+  let listKey = 0
+
+  const processInlineMarkdown = (line, key) => {
+    // Processar negrito **texto** e __texto__
+    // Processar itálico *texto* e _texto_
+    const parts = []
+    let remaining = line
+    let partKey = 0
+
+    // Regex para capturar **negrito**, *itálico*, ou texto normal
+    const regex = /(\*\*(.+?)\*\*|__(.+?)__|(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)|(?<!_)_(?!_)(.+?)(?<!_)_(?!_))/g
+    let lastIndex = 0
+    let match
+
+    while ((match = regex.exec(remaining)) !== null) {
+      // Texto antes do match
+      if (match.index > lastIndex) {
+        parts.push(remaining.slice(lastIndex, match.index))
+      }
+
+      // Negrito
+      if (match[2] || match[3]) {
+        parts.push(<strong key={`b-${partKey++}`} className="font-semibold">{match[2] || match[3]}</strong>)
+      }
+      // Itálico
+      else if (match[4] || match[5]) {
+        parts.push(<em key={`i-${partKey++}`}>{match[4] || match[5]}</em>)
+      }
+
+      lastIndex = regex.lastIndex
+    }
+
+    // Texto restante
+    if (lastIndex < remaining.length) {
+      parts.push(remaining.slice(lastIndex))
+    }
+
+    return parts.length > 0 ? parts : [line]
+  }
+
+  const flushList = () => {
+    if (currentList.length > 0) {
+      elements.push(
+        <ul key={`list-${listKey++}`} className="list-disc list-inside space-y-1 my-2">
+          {currentList.map((item, i) => (
+            <li key={i}>{processInlineMarkdown(item, i)}</li>
+          ))}
+        </ul>
+      )
+      currentList = []
+    }
+  }
+
+  lines.forEach((line, i) => {
+    // Lista com bullet (• ou - ou *)
+    const listMatch = line.match(/^[\s]*[•\-\*]\s+(.+)$/)
+    if (listMatch) {
+      currentList.push(listMatch[1])
+      return
+    }
+
+    // Se não é lista, finaliza lista anterior
+    flushList()
+
+    // Linha vazia
+    if (line.trim() === '') {
+      elements.push(<br key={`br-${i}`} />)
+      return
+    }
+
+    // Linha normal com markdown inline
+    elements.push(
+      <span key={`line-${i}`}>
+        {processInlineMarkdown(line, i)}
+        {i < lines.length - 1 && <br />}
+      </span>
+    )
+  })
+
+  // Finaliza última lista se houver
+  flushList()
+
+  return elements
+}
+
 export default function Chat() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -374,7 +467,7 @@ export default function Chat() {
                     <span aria-hidden="true">{agentConfig.emoji}</span> {agentConfig.name}
                   </p>
                 )}
-                <p className="whitespace-pre-wrap">{msg.content}</p>
+                <div className="text-sm leading-relaxed">{renderMarkdown(msg.content)}</div>
               </div>
 
               {msg.role === 'user' && (
