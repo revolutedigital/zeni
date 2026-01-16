@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Receipt, MessageCircle, LogOut } from 'lucide-react'
+import { LayoutDashboard, Receipt, MessageCircle, LogOut, Target } from 'lucide-react'
 
 export default function Layout({ children, user, onLogout }) {
   const location = useLocation()
@@ -7,6 +7,7 @@ export default function Layout({ children, user, onLogout }) {
   const navItems = [
     { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/transactions', icon: Receipt, label: 'Transações' },
+    { path: '/budgets', icon: Target, label: 'Orçamentos' },
     { path: '/chat', icon: MessageCircle, label: 'Chat IA' },
   ]
 

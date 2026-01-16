@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, Wallet, ArrowRight } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, ArrowRight, Target, AlertTriangle } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { getSummary, getTransactions } from '../services/api'
+import { getSummary, getTransactions, getBudgets } from '../services/api'
 
 function formatMoney(value) {
   return new Intl.NumberFormat('pt-BR', {
@@ -10,24 +10,47 @@ function formatMoney(value) {
   }).format(value)
 }
 
+function ProgressBar({ percent, color }) {
+  const clampedPercent = Math.min(percent, 100)
+  const isOver = percent > 100
+
+  return (
+    <div className="w-full bg-slate-700 rounded-full h-2">
+      <div
+        className={`h-2 rounded-full transition-all ${isOver ? 'bg-red-500' : ''}`}
+        style={{
+          width: `${clampedPercent}%`,
+          backgroundColor: isOver ? undefined : color
+        }}
+      />
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const [summary, setSummary] = useState(null)
   const [recent, setRecent] = useState([])
+  const [budgets, setBudgets] = useState([])
   const [loading, setLoading] = useState(true)
 
   const now = new Date()
   const month = now.getMonth() + 1
   const year = now.getFullYear()
+  const daysInMonth = new Date(year, month, 0).getDate()
+  const dayOfMonth = now.getDate()
+  const monthProgress = Math.round((dayOfMonth / daysInMonth) * 100)
 
   useEffect(() => {
     async function load() {
       try {
-        const [summaryData, transactionsData] = await Promise.all([
+        const [summaryData, transactionsData, budgetsData] = await Promise.all([
           getSummary(month, year),
-          getTransactions({ limit: 5 })
+          getTransactions({ limit: 5 }),
+          getBudgets(month, year)
         ])
         setSummary(summaryData)
         setRecent(transactionsData)
+        setBudgets(budgetsData)
       } catch (error) {
         console.error('Erro ao carregar dashboard:', error)
       } finally {
@@ -45,15 +68,40 @@ export default function Dashboard() {
     )
   }
 
+  // Calcular orçamentos estourados
+  const overBudget = budgets.filter(b => b.percentUsed > 100)
+  const nearLimit = budgets.filter(b => b.percentUsed >= 80 && b.percentUsed <= 100)
+
+  // Total orçado vs gasto
+  const totalBudget = budgets.reduce((sum, b) => sum + b.budget, 0)
+  const totalSpent = budgets.reduce((sum, b) => sum + b.spent, 0)
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <p className="text-zeni-muted">
-          {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+          {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })} • Dia {dayOfMonth} de {daysInMonth}
         </p>
       </div>
+
+      {/* Alertas */}
+      {overBudget.length > 0 && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+          <div className="flex items-center gap-2 text-red-400 mb-2">
+            <AlertTriangle size={20} />
+            <span className="font-semibold">{overBudget.length} categoria(s) estourada(s)</span>
+          </div>
+          <div className="text-sm text-red-300">
+            {overBudget.map(b => (
+              <span key={b.category_id} className="mr-3">
+                {b.category_name}: {formatMoney(b.spent)} / {formatMoney(b.budget)}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Cards de resumo */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -94,12 +142,70 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Orçamento vs Real */}
+      {totalBudget > 0 && (
+        <div className="bg-zeni-card rounded-xl p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Target size={20} className="text-zeni-primary" />
+              <h2 className="font-semibold">Orçamento do Mês</h2>
+            </div>
+            <span className="text-sm text-zeni-muted">{monthProgress}% do mês</span>
+          </div>
+
+          <div className="mb-4">
+            <div className="flex justify-between text-sm mb-1">
+              <span>Gasto: {formatMoney(totalSpent)}</span>
+              <span>Orçado: {formatMoney(totalBudget)}</span>
+            </div>
+            <ProgressBar
+              percent={Math.round((totalSpent / totalBudget) * 100)}
+              color="#10B981"
+            />
+            <p className="text-xs text-zeni-muted mt-1">
+              {totalSpent <= totalBudget
+                ? `Sobram ${formatMoney(totalBudget - totalSpent)}`
+                : `Estourado em ${formatMoney(totalSpent - totalBudget)}`
+              }
+            </p>
+          </div>
+
+          {/* Top categorias por orçamento */}
+          <div className="space-y-3">
+            {budgets.slice(0, 5).map((b) => (
+              <div key={b.category_id}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="flex items-center gap-2">
+                    <div
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: b.category_color }}
+                    />
+                    {b.category_name}
+                  </span>
+                  <span className={b.percentUsed > 100 ? 'text-red-400' : ''}>
+                    {formatMoney(b.spent)} / {formatMoney(b.budget)}
+                  </span>
+                </div>
+                <ProgressBar percent={b.percentUsed} color={b.category_color} />
+              </div>
+            ))}
+          </div>
+
+          <Link
+            to="/budgets"
+            className="block text-center text-zeni-primary text-sm mt-4 hover:underline"
+          >
+            Ver todos os orçamentos
+          </Link>
+        </div>
+      )}
+
       {/* Gastos por categoria */}
       {summary?.byCategory?.length > 0 && (
         <div className="bg-zeni-card rounded-xl p-4">
           <h2 className="font-semibold mb-4">Gastos por categoria</h2>
           <div className="space-y-3">
-            {summary.byCategory.slice(0, 5).map((cat) => (
+            {summary.byCategory.slice(0, 6).map((cat) => (
               <div key={cat.id} className="flex items-center gap-3">
                 <div
                   className="w-3 h-3 rounded-full"
@@ -160,7 +266,7 @@ export default function Dashboard() {
         className="block bg-gradient-to-r from-zeni-primary to-emerald-600 rounded-xl p-4 text-center hover:opacity-90 transition-opacity"
       >
         <p className="font-semibold">Converse com a IA</p>
-        <p className="text-sm text-emerald-100">Digite "50 mercado" para registrar ou pergunte "como estou?"</p>
+        <p className="text-sm text-emerald-100">Pergunte "como estou?" ou "analise meus gastos"</p>
       </Link>
     </div>
   )
