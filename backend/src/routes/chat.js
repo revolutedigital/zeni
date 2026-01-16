@@ -15,37 +15,54 @@ async function getUserContext(userId) {
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
 
-  // Resumo do mês
-  const summary = await pool.query(`
-    SELECT
-      type,
-      SUM(amount) as total
+  // Total de despesas do mês
+  const expensesResult = await pool.query(`
+    SELECT COALESCE(SUM(amount), 0) as total
     FROM transactions
     WHERE user_id = $1
       AND EXTRACT(MONTH FROM date) = $2
       AND EXTRACT(YEAR FROM date) = $3
-    GROUP BY type
+      AND type = 'expense'
   `, [userId, month, year]);
 
-  // Gastos por categoria
+  // Total orçado no mês
+  const budgetResult = await pool.query(`
+    SELECT COALESCE(SUM(amount), 0) as total
+    FROM budgets
+    WHERE user_id = $1
+      AND month = $2
+      AND year = $3
+  `, [userId, month, year]);
+
+  // Gastos por categoria com orçamento
   const byCategory = await pool.query(`
     SELECT
       c.name,
-      SUM(t.amount) as spent,
-      b.amount as budget
-    FROM transactions t
-    JOIN categories c ON t.category_id = c.id
-    LEFT JOIN budgets b ON b.category_id = c.id AND b.user_id = t.user_id AND b.month = $2 AND b.year = $3
-    WHERE t.user_id = $1
+      COALESCE(SUM(t.amount), 0) as spent,
+      COALESCE(b.amount, 0) as budget,
+      CASE
+        WHEN b.amount > 0 THEN ROUND((COALESCE(SUM(t.amount), 0) / b.amount) * 100)
+        ELSE 0
+      END as percent_used
+    FROM categories c
+    LEFT JOIN transactions t ON t.category_id = c.id
+      AND t.user_id = $1
       AND EXTRACT(MONTH FROM t.date) = $2
       AND EXTRACT(YEAR FROM t.date) = $3
       AND t.type = 'expense'
+    LEFT JOIN budgets b ON b.category_id = c.id
+      AND b.user_id = $1
+      AND b.month = $2
+      AND b.year = $3
+    WHERE c.type IN ('expense', 'both')
     GROUP BY c.name, b.amount
+    HAVING COALESCE(SUM(t.amount), 0) > 0 OR COALESCE(b.amount, 0) > 0
+    ORDER BY COALESCE(SUM(t.amount), 0) DESC
   `, [userId, month, year]);
 
   // Últimas transações
   const recent = await pool.query(`
-    SELECT t.amount, t.description, t.date, t.type, c.name as category
+    SELECT t.amount, t.description, t.date, t.type, c.name as category, t.paid
     FROM transactions t
     LEFT JOIN categories c ON t.category_id = c.id
     WHERE t.user_id = $1
@@ -53,9 +70,13 @@ async function getUserContext(userId) {
     LIMIT 10
   `, [userId]);
 
+  const expenses = parseFloat(expensesResult.rows[0].total);
+  const totalBudget = parseFloat(budgetResult.rows[0].total);
+  const remaining = totalBudget - expenses;
+
   // Alertas de orçamento estourado
   const budgetAlerts = byCategory.rows
-    .filter(row => row.budget && parseFloat(row.spent) > parseFloat(row.budget))
+    .filter(row => row.budget > 0 && parseFloat(row.spent) > parseFloat(row.budget))
     .map(row => ({
       category: row.name,
       spent: parseFloat(row.spent),
@@ -63,16 +84,23 @@ async function getUserContext(userId) {
       over: parseFloat(row.spent) - parseFloat(row.budget)
     }));
 
-  const income = summary.rows.find(r => r.type === 'income')?.total || 0;
-  const expenses = summary.rows.find(r => r.type === 'expense')?.total || 0;
+  // Formatar byCategory para incluir percentUsed
+  const formattedByCategory = byCategory.rows.map(row => ({
+    name: row.name,
+    spent: parseFloat(row.spent),
+    budget: parseFloat(row.budget),
+    percentUsed: parseInt(row.percent_used) || 0,
+    remaining: parseFloat(row.budget) - parseFloat(row.spent)
+  }));
 
   return {
     month,
     year,
-    income: parseFloat(income),
-    expenses: parseFloat(expenses),
-    balance: parseFloat(income) - parseFloat(expenses),
-    byCategory: byCategory.rows,
+    totalBudget,
+    expenses,
+    remaining,
+    percentUsed: totalBudget > 0 ? Math.round((expenses / totalBudget) * 100) : 0,
+    byCategory: formattedByCategory,
     recentTransactions: recent.rows,
     budgetAlerts
   };
@@ -129,8 +157,8 @@ router.post('/', upload.single('image'), async (req, res) => {
 
           // Salvar transação
           await pool.query(`
-            INSERT INTO transactions (user_id, amount, description, date, type, category_id, source)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            INSERT INTO transactions (user_id, amount, description, date, type, category_id, source, paid)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
           `, [
             req.userId,
             parsed.transaction.amount,
@@ -138,7 +166,8 @@ router.post('/', upload.single('image'), async (req, res) => {
             parsed.transaction.date,
             parsed.transaction.type,
             categoryId,
-            hasImage ? 'photo' : 'text'
+            hasImage ? 'photo' : 'text',
+            parsed.transaction.paid !== undefined ? parsed.transaction.paid : true
           ]);
         }
       } catch (e) {
@@ -152,7 +181,10 @@ router.post('/', upload.single('image'), async (req, res) => {
       context: {
         month: context.month,
         year: context.year,
+        totalBudget: context.totalBudget,
         expenses: context.expenses,
+        remaining: context.remaining,
+        percentUsed: context.percentUsed,
         budgetAlerts: context.budgetAlerts
       }
     });

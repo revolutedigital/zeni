@@ -111,13 +111,13 @@ router.get('/summary', async (req, res) => {
 // Criar transação
 router.post('/', async (req, res) => {
   try {
-    const { amount, description, date, type, category_id, source = 'manual', metadata } = req.body;
+    const { amount, description, date, type, category_id, source = 'manual', metadata, paid = true } = req.body;
 
     const result = await pool.query(`
-      INSERT INTO transactions (user_id, amount, description, date, type, category_id, source, metadata)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO transactions (user_id, amount, description, date, type, category_id, source, metadata, paid)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *
-    `, [req.userId, amount, description, date, type, category_id, source, metadata]);
+    `, [req.userId, amount, description, date, type, category_id, source, metadata, paid]);
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -130,14 +130,20 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { amount, description, date, type, category_id } = req.body;
+    const { amount, description, date, type, category_id, paid } = req.body;
 
     const result = await pool.query(`
       UPDATE transactions
-      SET amount = $1, description = $2, date = $3, type = $4, category_id = $5, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $6 AND user_id = $7
+      SET amount = COALESCE($1, amount),
+          description = COALESCE($2, description),
+          date = COALESCE($3, date),
+          type = COALESCE($4, type),
+          category_id = COALESCE($5, category_id),
+          paid = COALESCE($6, paid),
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $7 AND user_id = $8
       RETURNING *
-    `, [amount, description, date, type, category_id, id, req.userId]);
+    `, [amount, description, date, type, category_id, paid, id, req.userId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Transação não encontrada' });
@@ -146,6 +152,30 @@ router.put('/:id', async (req, res) => {
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Erro ao atualizar transação:', error);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// Marcar transação como paga/não paga
+router.patch('/:id/paid', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { paid } = req.body;
+
+    const result = await pool.query(`
+      UPDATE transactions
+      SET paid = $1, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2 AND user_id = $3
+      RETURNING *
+    `, [paid, id, req.userId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Transação não encontrada' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Erro ao atualizar status:', error);
     res.status(500).json({ error: 'Erro interno' });
   }
 });

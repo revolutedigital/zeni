@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, X, ChevronLeft, ChevronRight, Filter, Search } from 'lucide-react'
+import { Plus, Trash2, X, ChevronLeft, ChevronRight, Filter, Search, Check, Circle } from 'lucide-react'
 import { getTransactions, getCategories, createTransaction, deleteTransaction } from '../services/api'
+
+const API_URL = import.meta.env.VITE_API_URL || '/api'
 
 function formatMoney(value) {
   return new Intl.NumberFormat('pt-BR', {
@@ -91,6 +93,26 @@ export default function Transactions() {
       loadData()
     } catch (error) {
       console.error('Erro ao deletar:', error)
+    }
+  }
+
+  async function togglePaid(id, currentPaid) {
+    try {
+      const token = localStorage.getItem('zeni_token')
+      await fetch(`${API_URL}/transactions/${id}/paid`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ paid: !currentPaid })
+      })
+      // Atualizar estado local
+      setTransactions(prev =>
+        prev.map(t => t.id === id ? { ...t, paid: !currentPaid } : t)
+      )
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error)
     }
   }
 
@@ -286,19 +308,34 @@ export default function Transactions() {
               {/* Transações do dia */}
               <div className="divide-y divide-slate-700">
                 {groupedByDate[dateKey].map((t) => (
-                  <div key={t.id} className="flex items-center justify-between p-4">
+                  <div key={t.id} className={`flex items-center justify-between p-4 ${!t.paid ? 'bg-yellow-900/20' : ''}`}>
                     <div className="flex items-center gap-3">
+                      {/* Checkbox de pago */}
+                      <button
+                        onClick={() => togglePaid(t.id, t.paid)}
+                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                          t.paid
+                            ? 'bg-emerald-500 border-emerald-500 text-white'
+                            : 'border-yellow-500 text-yellow-500 hover:bg-yellow-500/20'
+                        }`}
+                        title={t.paid ? 'Marcar como pendente' : 'Marcar como pago'}
+                      >
+                        {t.paid ? <Check size={14} /> : <Circle size={14} />}
+                      </button>
                       <div
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: t.category_color || '#9CA3AF' }}
                       />
                       <div>
-                        <p className="font-medium">{t.description || t.category_name || 'Sem descrição'}</p>
+                        <p className={`font-medium ${!t.paid ? 'text-yellow-200' : ''}`}>
+                          {t.description || t.category_name || 'Sem descrição'}
+                          {!t.paid && <span className="ml-2 text-xs bg-yellow-500/30 text-yellow-300 px-2 py-0.5 rounded">Pendente</span>}
+                        </p>
                         <p className="text-sm text-zeni-muted">{t.category_name}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={`font-semibold ${t.type === 'income' ? 'text-emerald-500' : 'text-red-400'}`}>
+                      <span className={`font-semibold ${t.type === 'income' ? 'text-emerald-500' : 'text-red-400'} ${!t.paid ? 'opacity-70' : ''}`}>
                         {t.type === 'income' ? '+' : '-'}{formatMoney(t.amount)}
                       </span>
                       <button
