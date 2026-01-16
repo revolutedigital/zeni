@@ -10,7 +10,61 @@ body {
   @apply bg-zeni-dark text-zeni-text min-h-screen;
 }
 
-/* Scrollbar customizada */
+/* ===== ACESSIBILIDADE ===== */
+
+/* Skip Link - navegação por teclado */
+.skip-link {
+  @apply absolute -top-10 left-4 bg-zeni-primary text-white px-4 py-2 rounded-lg z-50 transition-all;
+}
+
+.skip-link:focus {
+  @apply top-4;
+}
+
+/* Focus visível aprimorado */
+*:focus-visible {
+  @apply outline-none ring-2 ring-zeni-primary ring-offset-2 ring-offset-zeni-dark;
+}
+
+/* Remove focus para mouse, mantém para teclado */
+*:focus:not(:focus-visible) {
+  @apply outline-none ring-0;
+}
+
+/* Botões com focus visível */
+button:focus-visible,
+a:focus-visible {
+  @apply ring-2 ring-zeni-primary ring-offset-2 ring-offset-zeni-dark rounded-lg;
+}
+
+/* Input focus */
+input:focus,
+textarea:focus,
+select:focus {
+  @apply outline-none ring-2 ring-zeni-primary;
+}
+
+/* Reduced motion - respeita preferências do usuário */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --zeni-primary: #00ff88;
+    --zeni-text: #ffffff;
+    --zeni-muted: #cccccc;
+  }
+}
+
+/* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -23,7 +77,314 @@ body {
   @apply bg-zeni-muted rounded-full;
 }
 
-/* Input focus */
-input:focus, textarea:focus {
-  @apply outline-none ring-2 ring-zeni-primary;
+/* ===== UTILITÁRIOS ===== */
+
+/* Screen reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Live region para anúncios */
+.live-region {
+  @apply sr-only;
+}
+
+/* Skeleton loading */
+.skeleton {
+  @apply bg-slate-700 animate-pulse rounded;
+}
+
+/* Toast animations */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.toast-enter {
+  animation: slideIn 0.3s ease-out;
+}
+
+.toast-exit {
+  animation: slideOut 0.3s ease-in;
+}
+
+/* ===== ANIMAÇÕES GLOBAIS ===== */
+
+/* Fade In */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Scale In - para modais e popups */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.2s ease-out;
+}
+
+/* Slide Up - para elementos que entram de baixo */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideUp {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Slide Down - para dropdowns */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideDown {
+  animation: slideDown 0.2s ease-out;
+}
+
+/* Bounce - para elementos de sucesso */
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-bounceIn {
+  animation: bounceIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Shake - para erros */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* Shimmer - para loading */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Pulse suave - para chamar atenção */
+@keyframes pulseSoft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-pulseSoft {
+  animation: pulseSoft 2s ease-in-out infinite;
+}
+
+/* Float - para mascote e elementos decorativos */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Spin lento - para loading alternativo */
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spinSlow {
+  animation: spinSlow 2s linear infinite;
+}
+
+/* ===== MICRO-INTERAÇÕES ===== */
+
+/* Hover lift - para cards interativos */
+.hover-lift {
+  @apply transition-all duration-200;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* Hover glow - para botões e elementos importantes */
+.hover-glow {
+  @apply transition-all duration-200;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+}
+
+/* Press effect - feedback de clique */
+.press-effect {
+  @apply transition-transform duration-100;
+}
+
+.press-effect:active {
+  transform: scale(0.97);
+}
+
+/* Checkbox toggle animation */
+.checkbox-toggle {
+  @apply transition-all duration-200;
+}
+
+.checkbox-toggle.checked {
+  @apply bg-zeni-primary border-zeni-primary;
+}
+
+.checkbox-toggle .checkmark {
+  @apply transition-all duration-200 opacity-0 scale-50;
+}
+
+.checkbox-toggle.checked .checkmark {
+  @apply opacity-100 scale-100;
+}
+
+/* Number counter animation */
+.counter-animate {
+  @apply transition-all duration-500;
+}
+
+/* Progress bar fill animation */
+.progress-fill {
+  @apply transition-all duration-700 ease-out;
+}
+
+/* ===== ESTADOS DE TRANSAÇÃO ===== */
+
+/* Linha de transação com animação de entrada */
+.transaction-row {
+  @apply transition-all duration-200;
+}
+
+.transaction-row:hover {
+  @apply bg-slate-700/30;
+}
+
+/* Badge de status com pulse */
+.status-pending {
+  @apply relative;
+}
+
+.status-pending::after {
+  content: '';
+  @apply absolute inset-0 rounded-full bg-amber-400/30 animate-ping;
+}
+
+/* ===== COMPONENTE DE LOADING ===== */
+
+/* Dots loading */
+@keyframes dotPulse {
+  0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+.loading-dots span {
+  @apply inline-block w-2 h-2 bg-zeni-primary rounded-full mx-0.5;
+}
+
+.loading-dots span:nth-child(1) { animation: dotPulse 1.4s ease-in-out infinite; }
+.loading-dots span:nth-child(2) { animation: dotPulse 1.4s ease-in-out 0.2s infinite; }
+.loading-dots span:nth-child(3) { animation: dotPulse 1.4s ease-in-out 0.4s infinite; }
+
+/* ===== ZENI MASCOTE ANIMAÇÕES ===== */
+
+/* Mascote flutuando */
+.zeni-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Mascote acenando */
+@keyframes wave {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(20deg); }
+  75% { transform: rotate(-10deg); }
+}
+
+.zeni-wave {
+  transform-origin: bottom center;
+  animation: wave 1s ease-in-out infinite;
+}
+
+/* Mascote piscando */
+@keyframes blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+
+.zeni-blink {
+  animation: blink 3s ease-in-out infinite;
 }

@@ -6,6 +6,7 @@ import Transactions from './pages/Transactions'
 import Chat from './pages/Chat'
 import Budgets from './pages/Budgets'
 import Login from './pages/Login'
+import { ToastProvider } from './components/ui/Toast'
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('zeni_token'))
@@ -35,21 +36,27 @@ function App() {
   }
 
   if (!token) {
-    return <Login onLogin={handleLogin} />
+    return (
+      <ToastProvider>
+        <Login onLogin={handleLogin} />
+      </ToastProvider>
+    )
   }
 
   return (
-    <BrowserRouter>
-      <Layout user={user} onLogout={handleLogout}>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/transactions" element={<Transactions />} />
-          <Route path="/budgets" element={<Budgets />} />
-          <Route path="/chat" element={<Chat />} />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </Layout>
-    </BrowserRouter>
+    <ToastProvider>
+      <BrowserRouter>
+        <Layout user={user} onLogout={handleLogout}>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/transactions" element={<Transactions />} />
+            <Route path="/budgets" element={<Budgets />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </Layout>
+      </BrowserRouter>
+    </ToastProvider>
   )
 }
 
