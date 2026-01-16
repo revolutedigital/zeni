@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, Wallet, ArrowRight, Target, AlertTriangle } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, ArrowRight, Target, AlertTriangle, ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { getSummary, getTransactions, getBudgets } from '../services/api'
 
@@ -27,25 +27,32 @@ function ProgressBar({ percent, color }) {
   )
 }
 
+const MONTH_NAMES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+]
+
 export default function Dashboard() {
+  const now = new Date()
+  const [month, setMonth] = useState(now.getMonth() + 1)
+  const [year, setYear] = useState(now.getFullYear())
   const [summary, setSummary] = useState(null)
   const [recent, setRecent] = useState([])
   const [budgets, setBudgets] = useState([])
   const [loading, setLoading] = useState(true)
 
-  const now = new Date()
-  const month = now.getMonth() + 1
-  const year = now.getFullYear()
+  const isCurrentMonth = month === now.getMonth() + 1 && year === now.getFullYear()
   const daysInMonth = new Date(year, month, 0).getDate()
-  const dayOfMonth = now.getDate()
+  const dayOfMonth = isCurrentMonth ? now.getDate() : daysInMonth
   const monthProgress = Math.round((dayOfMonth / daysInMonth) * 100)
 
   useEffect(() => {
     async function load() {
+      setLoading(true)
       try {
         const [summaryData, transactionsData, budgetsData] = await Promise.all([
           getSummary(month, year),
-          getTransactions({ limit: 5 }),
+          getTransactions({ month, year, limit: 5 }),
           getBudgets(month, year)
         ])
         setSummary(summaryData)
@@ -60,12 +67,27 @@ export default function Dashboard() {
     load()
   }, [month, year])
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-zeni-muted">Carregando...</div>
-      </div>
-    )
+  function prevMonth() {
+    if (month === 1) {
+      setMonth(12)
+      setYear(year - 1)
+    } else {
+      setMonth(month - 1)
+    }
+  }
+
+  function nextMonth() {
+    if (month === 12) {
+      setMonth(1)
+      setYear(year + 1)
+    } else {
+      setMonth(month + 1)
+    }
+  }
+
+  function goToCurrentMonth() {
+    setMonth(now.getMonth() + 1)
+    setYear(now.getFullYear())
   }
 
   // Calcular orçamentos estourados
@@ -78,196 +100,236 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-zeni-muted">
-          {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })} • Dia {dayOfMonth} de {daysInMonth}
-        </p>
-      </div>
-
-      {/* Alertas */}
-      {overBudget.length > 0 && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
-          <div className="flex items-center gap-2 text-red-400 mb-2">
-            <AlertTriangle size={20} />
-            <span className="font-semibold">{overBudget.length} categoria(s) estourada(s)</span>
-          </div>
-          <div className="text-sm text-red-300">
-            {overBudget.map(b => (
-              <span key={b.category_id} className="mr-3">
-                {b.category_name}: {formatMoney(b.spent)} / {formatMoney(b.budget)}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Cards de resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-zeni-card rounded-xl p-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-emerald-500/20 rounded-lg">
-              <TrendingUp className="text-emerald-500" size={20} />
-            </div>
-            <span className="text-zeni-muted text-sm">Receitas</span>
-          </div>
-          <p className="text-2xl font-bold text-emerald-500">
-            {formatMoney(summary?.income || 0)}
-          </p>
-        </div>
-
-        <div className="bg-zeni-card rounded-xl p-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-red-500/20 rounded-lg">
-              <TrendingDown className="text-red-500" size={20} />
-            </div>
-            <span className="text-zeni-muted text-sm">Despesas</span>
-          </div>
-          <p className="text-2xl font-bold text-red-500">
-            {formatMoney(summary?.expenses || 0)}
-          </p>
-        </div>
-
-        <div className="bg-zeni-card rounded-xl p-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-zeni-primary/20 rounded-lg">
-              <Wallet className="text-zeni-primary" size={20} />
-            </div>
-            <span className="text-zeni-muted text-sm">Saldo</span>
-          </div>
-          <p className={`text-2xl font-bold ${summary?.balance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-            {formatMoney(summary?.balance || 0)}
-          </p>
-        </div>
-      </div>
-
-      {/* Orçamento vs Real */}
-      {totalBudget > 0 && (
-        <div className="bg-zeni-card rounded-xl p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Target size={20} className="text-zeni-primary" />
-              <h2 className="font-semibold">Orçamento do Mês</h2>
-            </div>
-            <span className="text-sm text-zeni-muted">{monthProgress}% do mês</span>
-          </div>
-
-          <div className="mb-4">
-            <div className="flex justify-between text-sm mb-1">
-              <span>Gasto: {formatMoney(totalSpent)}</span>
-              <span>Orçado: {formatMoney(totalBudget)}</span>
-            </div>
-            <ProgressBar
-              percent={Math.round((totalSpent / totalBudget) * 100)}
-              color="#10B981"
-            />
-            <p className="text-xs text-zeni-muted mt-1">
-              {totalSpent <= totalBudget
-                ? `Sobram ${formatMoney(totalBudget - totalSpent)}`
-                : `Estourado em ${formatMoney(totalSpent - totalBudget)}`
-              }
+      {/* Header com seletor de mês */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          {isCurrentMonth && (
+            <p className="text-zeni-muted text-sm">
+              Dia {dayOfMonth} de {daysInMonth}
             </p>
-          </div>
+          )}
+        </div>
 
-          {/* Top categorias por orçamento */}
-          <div className="space-y-3">
-            {budgets.slice(0, 5).map((b) => (
-              <div key={b.category_id}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="flex items-center gap-2">
-                    <div
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: b.category_color }}
-                    />
-                    {b.category_name}
-                  </span>
-                  <span className={b.percentUsed > 100 ? 'text-red-400' : ''}>
-                    {formatMoney(b.spent)} / {formatMoney(b.budget)}
-                  </span>
-                </div>
-                <ProgressBar percent={b.percentUsed} color={b.category_color} />
-              </div>
-            ))}
-          </div>
-
-          <Link
-            to="/budgets"
-            className="block text-center text-zeni-primary text-sm mt-4 hover:underline"
+        {/* Seletor de mês */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={prevMonth}
+            className="p-2 hover:bg-zeni-card rounded-lg transition-colors"
           >
-            Ver todos os orçamentos
-          </Link>
-        </div>
-      )}
+            <ChevronLeft size={20} />
+          </button>
 
-      {/* Gastos por categoria */}
-      {summary?.byCategory?.length > 0 && (
-        <div className="bg-zeni-card rounded-xl p-4">
-          <h2 className="font-semibold mb-4">Gastos por categoria</h2>
-          <div className="space-y-3">
-            {summary.byCategory.slice(0, 6).map((cat) => (
-              <div key={cat.id} className="flex items-center gap-3">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: cat.color }}
-                />
-                <span className="flex-1 text-sm">{cat.name}</span>
-                <span className="font-medium">{formatMoney(cat.total)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Últimas transações */}
-      <div className="bg-zeni-card rounded-xl p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold">Últimas transações</h2>
-          <Link
-            to="/transactions"
-            className="text-zeni-primary text-sm flex items-center gap-1 hover:underline"
+          <button
+            onClick={goToCurrentMonth}
+            className={`px-4 py-2 rounded-lg font-medium min-w-[160px] text-center transition-colors ${
+              isCurrentMonth ? 'bg-zeni-primary text-white' : 'bg-zeni-card hover:bg-slate-700'
+            }`}
           >
-            Ver todas <ArrowRight size={14} />
-          </Link>
-        </div>
+            {MONTH_NAMES[month - 1]} {year}
+          </button>
 
-        {recent.length === 0 ? (
-          <p className="text-zeni-muted text-center py-4">
-            Nenhuma transação ainda
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {recent.map((t) => (
-              <div key={t.id} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: t.category_color || '#9CA3AF' }}
-                  />
-                  <div>
-                    <p className="text-sm">{t.description || t.category_name}</p>
-                    <p className="text-xs text-zeni-muted">
-                      {new Date(t.date).toLocaleDateString('pt-BR')}
-                    </p>
-                  </div>
-                </div>
-                <span className={`font-medium ${t.type === 'income' ? 'text-emerald-500' : 'text-red-400'}`}>
-                  {t.type === 'income' ? '+' : '-'}{formatMoney(t.amount)}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+          <button
+            onClick={nextMonth}
+            className="p-2 hover:bg-zeni-card rounded-lg transition-colors"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
       </div>
 
-      {/* CTA para chat */}
-      <Link
-        to="/chat"
-        className="block bg-gradient-to-r from-zeni-primary to-emerald-600 rounded-xl p-4 text-center hover:opacity-90 transition-opacity"
-      >
-        <p className="font-semibold">Converse com a IA</p>
-        <p className="text-sm text-emerald-100">Pergunte "como estou?" ou "analise meus gastos"</p>
-      </Link>
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-zeni-muted">Carregando...</div>
+        </div>
+      ) : (
+        <>
+          {/* Alertas */}
+          {overBudget.length > 0 && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+              <div className="flex items-center gap-2 text-red-400 mb-2">
+                <AlertTriangle size={20} />
+                <span className="font-semibold">{overBudget.length} categoria(s) estourada(s)</span>
+              </div>
+              <div className="text-sm text-red-300">
+                {overBudget.map(b => (
+                  <span key={b.category_id} className="mr-3">
+                    {b.category_name}: {formatMoney(b.spent)} / {formatMoney(b.budget)}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Cards de resumo */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-zeni-card rounded-xl p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-emerald-500/20 rounded-lg">
+                  <TrendingUp className="text-emerald-500" size={20} />
+                </div>
+                <span className="text-zeni-muted text-sm">Receitas</span>
+              </div>
+              <p className="text-2xl font-bold text-emerald-500">
+                {formatMoney(summary?.income || 0)}
+              </p>
+            </div>
+
+            <div className="bg-zeni-card rounded-xl p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-red-500/20 rounded-lg">
+                  <TrendingDown className="text-red-500" size={20} />
+                </div>
+                <span className="text-zeni-muted text-sm">Despesas</span>
+              </div>
+              <p className="text-2xl font-bold text-red-500">
+                {formatMoney(summary?.expenses || 0)}
+              </p>
+            </div>
+
+            <div className="bg-zeni-card rounded-xl p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-zeni-primary/20 rounded-lg">
+                  <Wallet className="text-zeni-primary" size={20} />
+                </div>
+                <span className="text-zeni-muted text-sm">Saldo</span>
+              </div>
+              <p className={`text-2xl font-bold ${summary?.balance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                {formatMoney(summary?.balance || 0)}
+              </p>
+            </div>
+          </div>
+
+          {/* Orçamento vs Real */}
+          {totalBudget > 0 && (
+            <div className="bg-zeni-card rounded-xl p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Target size={20} className="text-zeni-primary" />
+                  <h2 className="font-semibold">Orçamento do Mês</h2>
+                </div>
+                <span className="text-sm text-zeni-muted">{monthProgress}% do mês</span>
+              </div>
+
+              <div className="mb-4">
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Gasto: {formatMoney(totalSpent)}</span>
+                  <span>Orçado: {formatMoney(totalBudget)}</span>
+                </div>
+                <ProgressBar
+                  percent={Math.round((totalSpent / totalBudget) * 100)}
+                  color="#10B981"
+                />
+                <p className="text-xs text-zeni-muted mt-1">
+                  {totalSpent <= totalBudget
+                    ? `Sobram ${formatMoney(totalBudget - totalSpent)}`
+                    : `Estourado em ${formatMoney(totalSpent - totalBudget)}`
+                  }
+                </p>
+              </div>
+
+              {/* Top categorias por orçamento */}
+              <div className="space-y-3">
+                {budgets.slice(0, 5).map((b) => (
+                  <div key={b.category_id}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="flex items-center gap-2">
+                        <div
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: b.category_color }}
+                        />
+                        {b.category_name}
+                      </span>
+                      <span className={b.percentUsed > 100 ? 'text-red-400' : ''}>
+                        {formatMoney(b.spent)} / {formatMoney(b.budget)}
+                      </span>
+                    </div>
+                    <ProgressBar percent={b.percentUsed} color={b.category_color} />
+                  </div>
+                ))}
+              </div>
+
+              <Link
+                to="/budgets"
+                className="block text-center text-zeni-primary text-sm mt-4 hover:underline"
+              >
+                Ver todos os orçamentos
+              </Link>
+            </div>
+          )}
+
+          {/* Gastos por categoria */}
+          {summary?.byCategory?.length > 0 && (
+            <div className="bg-zeni-card rounded-xl p-4">
+              <h2 className="font-semibold mb-4">Gastos por categoria</h2>
+              <div className="space-y-3">
+                {summary.byCategory.slice(0, 6).map((cat) => (
+                  <div key={cat.id} className="flex items-center gap-3">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: cat.color }}
+                    />
+                    <span className="flex-1 text-sm">{cat.name}</span>
+                    <span className="font-medium">{formatMoney(cat.total)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Últimas transações */}
+          <div className="bg-zeni-card rounded-xl p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold">
+                {isCurrentMonth ? 'Últimas transações' : `Transações de ${MONTH_NAMES[month - 1]}`}
+              </h2>
+              <Link
+                to="/transactions"
+                className="text-zeni-primary text-sm flex items-center gap-1 hover:underline"
+              >
+                Ver todas <ArrowRight size={14} />
+              </Link>
+            </div>
+
+            {recent.length === 0 ? (
+              <p className="text-zeni-muted text-center py-4">
+                Nenhuma transação {isCurrentMonth ? 'ainda' : 'neste mês'}
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {recent.map((t) => (
+                  <div key={t.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: t.category_color || '#9CA3AF' }}
+                      />
+                      <div>
+                        <p className="text-sm">{t.description || t.category_name}</p>
+                        <p className="text-xs text-zeni-muted">
+                          {new Date(t.date).toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`font-medium ${t.type === 'income' ? 'text-emerald-500' : 'text-red-400'}`}>
+                      {t.type === 'income' ? '+' : '-'}{formatMoney(t.amount)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* CTA para chat */}
+          <Link
+            to="/chat"
+            className="block bg-gradient-to-r from-zeni-primary to-emerald-600 rounded-xl p-4 text-center hover:opacity-90 transition-opacity"
+          >
+            <p className="font-semibold">Converse com a IA</p>
+            <p className="text-sm text-emerald-100">Pergunte "como estou?" ou "analise meus gastos"</p>
+          </Link>
+        </>
+      )}
     </div>
   )
 }
