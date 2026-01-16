@@ -58,6 +58,7 @@ const GUARDIAN_PATTERNS = [
 // Padrões para análise CFO
 const CFO_PATTERNS = [
   /\bcomo (estou|est[áa]|tô|to)\b/i,
+  /\bcomo foi\b/i,  // "como foi meu 2024", "como foi o mês"
   /\bresume?\b/i,
   /\bresumo\b/i,
   /\bquanto gastei\b/i,
@@ -79,6 +80,7 @@ const CFO_PATTERNS = [
   /\b(20[2-3][0-9])\s+(todo|inteiro|completo)\b/i,
   /\bgastei.*(20[2-3][0-9])\b/i,
   /\b(20[2-3][0-9]).*gastei\b/i,
+  /\bmeu\s+(20[2-3][0-9])\b/i,  // "meu 2024", "meu 2025"
   /\bao total\b/i,
 ];
 
@@ -132,10 +134,11 @@ export function routeToAgent(userInput, context = {}) {
     return 'registrar_vision';
   }
 
-  // 2. Se parece claramente uma transação, vai pro registrador
-  if (hasTransactionIntent(input) && !hasCFOIntent(input) && !hasGuardianIntent(input, context)) {
-    console.log('[Orchestrator] → Agente: registrar (transação detectada)');
-    return 'registrar';
+  // 2. PRIORIDADE: Se é análise financeira (CFO) - verificar ANTES de transação
+  // Isso evita que "como foi meu 2024" vá pro registrador por causa do número
+  if (hasCFOIntent(input)) {
+    console.log('[Orchestrator] → Agente: cfo (análise financeira)');
+    return 'cfo';
   }
 
   // 3. Se precisa de validação/consulta de gasto
@@ -150,10 +153,10 @@ export function routeToAgent(userInput, context = {}) {
     return 'educator';
   }
 
-  // 5. Se é análise financeira explícita
-  if (hasCFOIntent(input)) {
-    console.log('[Orchestrator] → Agente: cfo (análise financeira)');
-    return 'cfo';
+  // 5. Se parece uma transação (registro de gasto/receita)
+  if (hasTransactionIntent(input)) {
+    console.log('[Orchestrator] → Agente: registrar (transação detectada)');
+    return 'registrar';
   }
 
   // 6. Default: CFO para perguntas gerais sobre finanças
