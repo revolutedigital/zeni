@@ -191,12 +191,12 @@ export async function executeAgent(agent, userInput, context = {}) {
 
     case 'cfo': {
       const prompt = CFO_PROMPT + contextStr;
-      return await callClaude(prompt, userInput, 'claude-3-5-sonnet-20241022');
+      return await callClaude(prompt, userInput, 'claude-sonnet-4-20250514');
     }
 
     case 'guardian': {
       const prompt = GUARDIAN_PROMPT + contextStr;
-      return await callClaude(prompt, userInput, 'claude-3-5-sonnet-20241022');
+      return await callClaude(prompt, userInput, 'claude-sonnet-4-20250514');
     }
 
     case 'educator': {
@@ -208,7 +208,7 @@ export async function executeAgent(agent, userInput, context = {}) {
     default: {
       // Fallback para CFO
       console.log(`[Orchestrator] Agente desconhecido "${agent}", usando CFO`);
-      return await callClaude(CFO_PROMPT + contextStr, userInput, 'claude-3-5-sonnet-20241022');
+      return await callClaude(CFO_PROMPT + contextStr, userInput, 'claude-sonnet-4-20250514');
     }
   }
 }
@@ -222,7 +222,7 @@ export function getAgentInfo(agentId) {
     name: 'Zeni',
     emoji: '🤖',
     description: 'Assistente financeiro',
-    model: 'claude-3-5-sonnet-20241022'
+    model: 'claude-sonnet-4-20250514'
   };
 }
 

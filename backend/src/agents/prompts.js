@@ -528,13 +528,13 @@ export const AGENT_METADATA = {
     name: 'CFO',
     emoji: '📊',
     description: 'Análises financeiras e resumos',
-    model: 'claude-3-5-sonnet-20241022'
+    model: 'claude-sonnet-4-20250514'
   },
   guardian: {
     name: 'Guardião',
     emoji: '🛡️',
     description: 'Alertas e validação de gastos',
-    model: 'claude-3-5-sonnet-20241022'
+    model: 'claude-sonnet-4-20250514'
   },
   educator: {
     name: 'Educador',
