@@ -230,8 +230,8 @@ export default function Budgets() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Orçamentos</h1>
-          <p className="text-zeni-muted text-sm">Defina metas de gastos por categoria</p>
+          <h1 className="page-title">Orçamentos</h1>
+          <p className="page-subtitle">Defina metas de gastos por categoria</p>
         </div>
 
         {/* Seletor de mês */}
@@ -293,21 +293,21 @@ export default function Budgets() {
             <div className="bg-zeni-card rounded-xl p-4">
               <div className="flex items-center gap-2 mb-4">
                 <Target size={20} className="text-zeni-primary" />
-                <h2 className="font-semibold">Resumo de {MONTH_NAMES[month - 1]}</h2>
+                <h2 className="section-title">Resumo de {MONTH_NAMES[month - 1]}</h2>
               </div>
 
               <div className="grid grid-cols-3 gap-4 mb-4">
                 <div>
                   <p className="text-zeni-muted text-sm">Orçado</p>
-                  <p className="text-xl font-bold">{formatMoney(totalBudget)}</p>
+                  <p className="money-md">{formatMoney(totalBudget)}</p>
                 </div>
                 <div>
                   <p className="text-zeni-muted text-sm">Gasto</p>
-                  <p className="text-xl font-bold text-red-400">{formatMoney(totalSpent)}</p>
+                  <p className="money-md text-red-400">{formatMoney(totalSpent)}</p>
                 </div>
                 <div>
                   <p className="text-zeni-muted text-sm">Restante</p>
-                  <p className={`text-xl font-bold ${totalRemaining >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                  <p className={`money-md ${totalRemaining >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                     {formatMoney(totalRemaining)}
                   </p>
                 </div>
@@ -419,7 +419,7 @@ export default function Budgets() {
           {/* Categorias sem orçamento */}
           {unbudgetedCategories.length > 0 && budgets.length > 0 && (
             <div className="bg-zeni-card rounded-xl p-4">
-              <h3 className="font-medium mb-3 text-zeni-muted">Categorias sem orçamento</h3>
+              <h3 className="h4 text-zeni-muted mb-3">Categorias sem orçamento</h3>
               <div className="flex flex-wrap gap-2">
                 {unbudgetedCategories.map(c => (
                   <button
@@ -449,7 +449,7 @@ export default function Budgets() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-zeni-card rounded-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">
+              <h2 className="h2">
                 Novo Orçamento - {MONTH_NAMES[month - 1]} {year}
               </h2>
               <button onClick={() => {

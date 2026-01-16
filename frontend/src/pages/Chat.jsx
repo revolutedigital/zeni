@@ -215,8 +215,8 @@ export default function Chat() {
     <div className="flex flex-col h-[calc(100vh-180px)]">
       {/* Header */}
       <header className="mb-4">
-        <h1 className="text-2xl font-bold" id="chat-title">Chat com IA</h1>
-        <p className="text-zeni-muted text-sm">
+        <h1 className="page-title" id="chat-title">Chat com IA</h1>
+        <p className="page-subtitle">
           4 agentes especializados prontos para ajudar
         </p>
       </header>

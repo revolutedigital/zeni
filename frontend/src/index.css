@@ -2,12 +2,119 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== TIPOGRAFIA BASE ===== */
+
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11'; /* Inter alternates */
 }
 
 body {
-  @apply bg-zeni-dark text-zeni-text min-h-screen;
+  @apply bg-zeni-dark text-zeni-text min-h-screen text-base;
+}
+
+/* ===== SISTEMA TIPOGRÁFICO ===== */
+
+/* Headings semânticos com tracking otimizado */
+h1, .h1 {
+  @apply text-2xl font-bold tracking-tight leading-tight;
+}
+
+h2, .h2 {
+  @apply text-xl font-semibold tracking-tight leading-snug;
+}
+
+h3, .h3 {
+  @apply text-lg font-semibold leading-snug;
+}
+
+h4, .h4 {
+  @apply text-base font-semibold leading-normal;
+}
+
+/* Parágrafos e texto corrido */
+p, .body-text {
+  @apply text-base leading-relaxed;
+}
+
+/* Texto pequeno/secundário */
+small, .text-small {
+  @apply text-sm leading-normal text-zeni-muted;
+}
+
+/* Captions e metadados */
+.caption {
+  @apply text-xs leading-normal text-zeni-muted;
+}
+
+/* Labels de formulário */
+label, .label {
+  @apply text-sm font-medium text-zeni-muted;
+}
+
+/* ===== VALORES MONETÁRIOS (PADRONIZADO) ===== */
+
+/* Valor monetário grande - para cards de resumo */
+.money-lg {
+  @apply text-2xl font-bold tracking-tight tabular-nums;
+}
+
+/* Valor monetário médio - para listas e detalhes */
+.money-md {
+  @apply text-lg font-semibold tracking-tight tabular-nums;
+}
+
+/* Valor monetário pequeno - para inline e badges */
+.money-sm {
+  @apply text-base font-medium tabular-nums;
+}
+
+/* Números tabulares para alinhamento em tabelas */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== ESTILOS DE LINK ===== */
+
+a:not([class]) {
+  @apply text-zeni-primary hover:text-emerald-400 transition-colors;
+}
+
+/* ===== TIPOGRAFIA RESPONSIVA ===== */
+
+@screen sm {
+  h1, .h1 {
+    @apply text-2xl;
+  }
+}
+
+@screen md {
+  h1, .h1 {
+    @apply text-3xl;
+  }
+}
+
+/* ===== PAGE TITLE (componente específico) ===== */
+
+.page-title {
+  @apply text-2xl font-bold tracking-tight leading-tight text-zeni-text;
+}
+
+.page-subtitle {
+  @apply text-sm text-zeni-muted mt-1;
+}
+
+/* ===== SECTION HEADERS ===== */
+
+.section-title {
+  @apply text-base font-semibold text-zeni-text;
+}
+
+.section-subtitle {
+  @apply text-sm text-zeni-muted;
 }
 
 /* ===== ACESSIBILIDADE ===== */

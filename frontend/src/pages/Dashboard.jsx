@@ -103,9 +103,9 @@ export default function Dashboard() {
       {/* Header com seletor de mês */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <h1 className="page-title">Dashboard</h1>
           {isCurrentMonth && (
-            <p className="text-zeni-muted text-sm">
+            <p className="page-subtitle">
               Dia {dayOfMonth} de {daysInMonth}
             </p>
           )}
@@ -170,7 +170,7 @@ export default function Dashboard() {
                 </div>
                 <span className="text-zeni-muted text-sm">Receitas</span>
               </div>
-              <p className="text-2xl font-bold text-emerald-500">
+              <p className="money-lg text-emerald-500">
                 {formatMoney(summary?.income || 0)}
               </p>
             </div>
@@ -182,7 +182,7 @@ export default function Dashboard() {
                 </div>
                 <span className="text-zeni-muted text-sm">Despesas</span>
               </div>
-              <p className="text-2xl font-bold text-red-500">
+              <p className="money-lg text-red-500">
                 {formatMoney(summary?.expenses || 0)}
               </p>
             </div>
@@ -194,7 +194,7 @@ export default function Dashboard() {
                 </div>
                 <span className="text-zeni-muted text-sm">Saldo</span>
               </div>
-              <p className={`text-2xl font-bold ${summary?.balance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+              <p className={`money-lg ${summary?.balance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                 {formatMoney(summary?.balance || 0)}
               </p>
             </div>
@@ -206,7 +206,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Target size={20} className="text-zeni-primary" />
-                  <h2 className="font-semibold">Orçamento do Mês</h2>
+                  <h2 className="section-title">Orçamento do Mês</h2>
                 </div>
                 <span className="text-sm text-zeni-muted">{monthProgress}% do mês</span>
               </div>
@@ -261,7 +261,7 @@ export default function Dashboard() {
           {/* Gastos por categoria */}
           {summary?.byCategory?.length > 0 && (
             <div className="bg-zeni-card rounded-xl p-4">
-              <h2 className="font-semibold mb-4">Gastos por categoria</h2>
+              <h2 className="section-title mb-4">Gastos por categoria</h2>
               <div className="space-y-3">
                 {summary.byCategory.slice(0, 6).map((cat) => (
                   <div key={cat.id} className="flex items-center gap-3">
@@ -270,7 +270,7 @@ export default function Dashboard() {
                       style={{ backgroundColor: cat.color }}
                     />
                     <span className="flex-1 text-sm">{cat.name}</span>
-                    <span className="font-medium">{formatMoney(cat.total)}</span>
+                    <span className="money-sm">{formatMoney(cat.total)}</span>
                   </div>
                 ))}
               </div>
@@ -280,7 +280,7 @@ export default function Dashboard() {
           {/* Últimas transações */}
           <div className="bg-zeni-card rounded-xl p-4">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold">
+              <h2 className="section-title">
                 {isCurrentMonth ? 'Últimas transações' : `Transações de ${MONTH_NAMES[month - 1]}`}
               </h2>
               <Link
@@ -311,7 +311,7 @@ export default function Dashboard() {
                         </p>
                       </div>
                     </div>
-                    <span className={`font-medium ${t.type === 'income' ? 'text-emerald-500' : 'text-red-400'}`}>
+                    <span className={`money-sm ${t.type === 'income' ? 'text-emerald-500' : 'text-red-400'}`}>
                       {t.type === 'income' ? '+' : '-'}{formatMoney(t.amount)}
                     </span>
                   </div>

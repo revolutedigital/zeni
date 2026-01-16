@@ -33,12 +33,12 @@ export default function Login({ onLogin }) {
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-zeni-primary mb-2">Zeni</h1>
-          <p className="text-zeni-muted">Suas finanças com inteligência</p>
+          <h1 className="text-4xl font-bold tracking-tight text-zeni-primary mb-2">Zeni</h1>
+          <p className="text-zeni-muted text-base">Suas finanças com inteligência</p>
         </div>
 
         <div className="bg-zeni-card rounded-xl p-6">
-          <h2 className="text-xl font-semibold mb-6">
+          <h2 className="h2 mb-6">
             {isRegister ? 'Criar conta' : 'Entrar'}
           </h2>
 

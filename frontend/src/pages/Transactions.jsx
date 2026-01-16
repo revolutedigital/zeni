@@ -178,7 +178,7 @@ export default function Transactions() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Transações</h1>
+        <h1 className="page-title">Transações</h1>
 
         {/* Seletor de mês */}
         <div className="flex items-center gap-2">
@@ -258,15 +258,15 @@ export default function Transactions() {
         <div className="flex gap-6 mt-4 pt-4 border-t border-slate-700">
           <div>
             <span className="text-zeni-muted text-sm">Receitas: </span>
-            <span className="text-emerald-500 font-medium">{formatMoney(totalIncome)}</span>
+            <span className="text-emerald-500 money-sm">{formatMoney(totalIncome)}</span>
           </div>
           <div>
             <span className="text-zeni-muted text-sm">Despesas: </span>
-            <span className="text-red-400 font-medium">{formatMoney(totalExpense)}</span>
+            <span className="text-red-400 money-sm">{formatMoney(totalExpense)}</span>
           </div>
           <div>
             <span className="text-zeni-muted text-sm">Saldo: </span>
-            <span className={`font-medium ${totalIncome - totalExpense >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+            <span className={`money-sm ${totalIncome - totalExpense >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
               {formatMoney(totalIncome - totalExpense)}
             </span>
           </div>
@@ -335,7 +335,7 @@ export default function Transactions() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={`font-semibold ${t.type === 'income' ? 'text-emerald-500' : 'text-red-400'} ${!t.paid ? 'opacity-70' : ''}`}>
+                      <span className={`money-sm ${t.type === 'income' ? 'text-emerald-500' : 'text-red-400'} ${!t.paid ? 'opacity-70' : ''}`}>
                         {t.type === 'income' ? '+' : '-'}{formatMoney(t.amount)}
                       </span>
                       <button
@@ -358,7 +358,7 @@ export default function Transactions() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-zeni-card rounded-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">Nova transação</h2>
+              <h2 className="h2">Nova transação</h2>
               <button onClick={() => setShowModal(false)} className="text-zeni-muted hover:text-white">
                 <X size={24} />
               </button>
