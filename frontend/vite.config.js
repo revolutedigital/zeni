@@ -31,11 +31,16 @@ export default defineConfig({
     })
   ],
   server: {
+    host: true,
     proxy: {
       '/api': {
         target: 'http://localhost:3002',
         changeOrigin: true
       }
     }
+  },
+  preview: {
+    host: true,
+    allowedHosts: ['zeni.up.railway.app', '.railway.app']
   }
 })
