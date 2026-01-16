@@ -1,49 +1,54 @@
 import { useState, useEffect, useRef } from 'react'
-import { Send, Image, Bot, User, Sparkles, Shield, BookOpen, PiggyBank } from 'lucide-react'
+import { Send, Image, User } from 'lucide-react'
 import { sendMessage, getChatHistory } from '../services/api'
 import ZeniMascot, { ZeniWelcome } from '../components/ZeniMascot'
 
-// Configuração dos agentes com cores e ícones
+// Configuração dos agentes com cores e variante da Zeni
 const AGENTS = {
   registrar: {
     name: 'Registrador',
     emoji: '📝',
-    icon: PiggyBank,
     color: 'text-emerald-400',
     bgColor: 'bg-emerald-400/10',
-    description: 'Registra suas transações'
+    borderColor: 'border-emerald-400/30',
+    description: 'Registra suas transações',
+    zeniVariant: 'happy' // Zeni feliz ao registrar
   },
   registrar_vision: {
     name: 'Registrador',
     emoji: '📷',
-    icon: PiggyBank,
     color: 'text-emerald-400',
     bgColor: 'bg-emerald-400/10',
-    description: 'Analisa comprovantes'
+    borderColor: 'border-emerald-400/30',
+    description: 'Analisa comprovantes',
+    zeniVariant: 'default' // Zeni olhando atentamente
   },
   cfo: {
     name: 'CFO',
     emoji: '📊',
-    icon: Sparkles,
     color: 'text-blue-400',
     bgColor: 'bg-blue-400/10',
-    description: 'Analisa suas finanças'
+    borderColor: 'border-blue-400/30',
+    description: 'Analisa suas finanças',
+    zeniVariant: 'thinking' // Zeni pensativa ao analisar
   },
   guardian: {
     name: 'Guardião',
     emoji: '🛡️',
-    icon: Shield,
     color: 'text-amber-400',
     bgColor: 'bg-amber-400/10',
-    description: 'Protege seu orçamento'
+    borderColor: 'border-amber-400/30',
+    description: 'Protege seu orçamento',
+    zeniVariant: 'worried' // Zeni preocupada/atenta
   },
   educator: {
     name: 'Educador',
     emoji: '📚',
-    icon: BookOpen,
     color: 'text-purple-400',
     bgColor: 'bg-purple-400/10',
-    description: 'Ensina finanças'
+    borderColor: 'border-purple-400/30',
+    description: 'Ensina finanças',
+    zeniVariant: 'waving' // Zeni simpática ensinando
   }
 }
 
@@ -191,11 +196,12 @@ export default function Chat() {
   function getAgentConfig(agentId) {
     return AGENTS[agentId] || {
       name: 'Zeni',
-      emoji: '🤖',
-      icon: Bot,
+      emoji: '💚',
       color: 'text-zeni-primary',
       bgColor: 'bg-zeni-primary/10',
-      description: 'Assistente'
+      borderColor: 'border-zeni-primary/30',
+      description: 'Assistente',
+      zeniVariant: 'default'
     }
   }
 
@@ -237,23 +243,22 @@ export default function Chat() {
               subtitle="Quer organizar? Fala comigo!"
             />
 
-            {/* Agentes Grid */}
+            {/* Agentes Grid com Zeni */}
             <div
               className="grid grid-cols-2 gap-3"
               role="list"
               aria-label="Agentes disponíveis"
             >
               {Object.entries(AGENTS).filter(([id]) => id !== 'registrar_vision').map(([id, agent]) => {
-                const Icon = agent.icon
                 return (
                   <article
                     key={id}
-                    className={`${agent.bgColor} rounded-xl p-3 border border-slate-700`}
+                    className={`${agent.bgColor} rounded-xl p-3 border ${agent.borderColor}`}
                     role="listitem"
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <Icon size={16} className={agent.color} aria-hidden="true" />
-                      <span className={`font-medium ${agent.color}`}>{agent.name}</span>
+                      <ZeniMascot variant={agent.zeniVariant} size="xs" />
+                      <span className={`font-medium text-sm ${agent.color}`}>{agent.name}</span>
                     </div>
                     <p className="text-xs text-zeni-muted">{agent.description}</p>
                   </article>
@@ -338,7 +343,6 @@ export default function Chat() {
 
         {messages.map((msg, i) => {
           const agentConfig = msg.agent ? getAgentConfig(msg.agent) : null
-          const AgentIcon = agentConfig?.icon || Bot
 
           return (
             <article
@@ -348,18 +352,21 @@ export default function Chat() {
             >
               {msg.role === 'assistant' && (
                 <div
-                  className={`w-8 h-8 rounded-full ${agentConfig?.bgColor || 'bg-zeni-primary/20'} flex items-center justify-center flex-shrink-0`}
+                  className="flex-shrink-0"
                   aria-hidden="true"
                 >
-                  <AgentIcon size={18} className={agentConfig?.color || 'text-zeni-primary'} />
+                  <ZeniMascot
+                    variant={agentConfig?.zeniVariant || 'default'}
+                    size="sm"
+                  />
                 </div>
               )}
 
               <div
-                className={`max-w-[80%] rounded-xl px-4 py-2 ${
+                className={`max-w-[80%] rounded-xl px-4 py-3 ${
                   msg.role === 'user'
                     ? 'bg-zeni-primary text-white'
-                    : 'bg-zeni-card'
+                    : `bg-zeni-card border ${agentConfig?.borderColor || 'border-slate-700'}`
                 }`}
               >
                 {msg.role === 'assistant' && agentConfig && (
