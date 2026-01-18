@@ -109,11 +109,13 @@ function Toast({ message, type, withMascot, onClose }) {
 
   const { icon: Icon, bgColor, textColor, mascotVariant } = config[type]
 
+  // Warm Minimalism 2026 - Toast com glassmorphism
   return (
     <div
       className={`
-        flex items-start gap-3 p-4 rounded-xl border backdrop-blur-sm
+        flex items-start gap-3 p-4 rounded-2xl border backdrop-blur-glass
         ${bgColor}
+        shadow-warm-md
         toast-enter
       `}
       role="alert"

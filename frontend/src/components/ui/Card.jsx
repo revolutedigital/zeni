@@ -2,8 +2,9 @@ import { forwardRef } from 'react'
 
 /**
  * Card - Componente de card do Design System Zeni
+ * Warm Minimalism 2026 Edition
  *
- * @param {string} variant - 'default' | 'elevated' | 'outlined' | 'interactive'
+ * @param {string} variant - 'default' | 'elevated' | 'outlined' | 'interactive' | 'glass'
  * @param {string} padding - 'none' | 'sm' | 'md' | 'lg'
  */
 const Card = forwardRef(({
@@ -14,13 +15,16 @@ const Card = forwardRef(({
   as: Component = 'div',
   ...props
 }, ref) => {
-  const baseStyles = 'rounded-xl'
+  // Warm Minimalism 2026 - Border radius aumentado para 2xl
+  const baseStyles = 'rounded-2xl'
 
   const variants = {
-    default: 'bg-zeni-card',
-    elevated: 'bg-zeni-card shadow-lg shadow-black/20',
-    outlined: 'bg-zeni-card border border-slate-700',
-    interactive: 'bg-zeni-card border border-slate-700 hover:border-zeni-primary/50 hover:bg-slate-700/30 transition-all cursor-pointer'
+    default: 'bg-zeni-card shadow-warm-sm',
+    elevated: 'bg-zeni-card shadow-warm-lg',
+    outlined: 'bg-zeni-card border border-zeni-border shadow-warm-sm',
+    interactive: 'bg-zeni-card border border-zeni-border hover:border-zeni-primary/50 hover:shadow-warm-md transition-all cursor-pointer',
+    // Glassmorphism 2.0 - Nova variante para 2026
+    glass: 'glass-card',
   }
 
   const paddings = {
@@ -88,7 +92,7 @@ export const CardContent = ({ children, className = '', ...props }) => (
  * CardFooter - Rodapé do Card
  */
 export const CardFooter = ({ children, className = '', ...props }) => (
-  <div className={`mt-4 pt-4 border-t border-slate-700 ${className}`} {...props}>
+  <div className={`mt-4 pt-4 border-t border-zeni-border ${className}`} {...props}>
     {children}
   </div>
 )

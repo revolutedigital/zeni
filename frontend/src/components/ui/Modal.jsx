@@ -96,12 +96,12 @@ export default function Modal({
         aria-hidden="true"
       />
 
-      {/* Modal Content */}
+      {/* Modal Content - Glassmorphism 2026 */}
       <div
         ref={modalRef}
         tabIndex={-1}
         className={`
-          relative w-full ${sizes[size]} bg-zeni-card rounded-xl shadow-2xl
+          relative w-full ${sizes[size]} glass-card rounded-2xl shadow-warm-xl
           animate-scaleIn transform
           ${className}
         `}
@@ -109,7 +109,7 @@ export default function Modal({
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between p-4 border-b border-slate-700">
+          <div className="flex items-center justify-between p-4 border-b border-zeni-border">
             {title && (
               <h2 id="modal-title" className="text-lg font-semibold text-zeni-text">
                 {title}
@@ -146,7 +146,7 @@ export function ModalFooter({
 }) {
   return (
     <div
-      className={`flex justify-end gap-3 pt-4 border-t border-slate-700 mt-4 ${className}`}
+      className={`flex justify-end gap-3 pt-4 border-t border-zeni-border mt-4 ${className}`}
       {...props}
     >
       {children}

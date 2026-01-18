@@ -10,19 +10,22 @@ import ZeniWorried from '../assets/mascot/zeni-worried.svg';
 
 /**
  * Componente da mascote Zeni
+ * Motion-First 2026 Edition
  *
  * @param {string} variant - Variação da mascote: 'default' | 'icon' | 'waving' | 'thinking' | 'happy' | 'worried'
  * @param {string} size - Tamanho: 'xs' (24px) | 'sm' (32px) | 'md' (48px) | 'lg' (64px) | 'xl' (96px) | '2xl' (128px) | 'full' (200px)
  * @param {string} className - Classes CSS adicionais
  * @param {string} alt - Texto alternativo para acessibilidade
  * @param {boolean} animated - Ativar animação flutuante
+ * @param {string} animation - Tipo de animação: 'float' | 'breathe' | 'bounce' | 'wave' | 'heartbeat' | 'pop' | 'none'
  */
 const ZeniMascot = ({
   variant = 'default',
   size = 'md',
   className = '',
   alt = 'Zeni - Sua assistente financeira',
-  animated = false
+  animated = false,
+  animation = 'float'
 }) => {
   const mascots = {
     default: ZeniDefault,
@@ -43,15 +46,27 @@ const ZeniMascot = ({
     full: 'w-48 h-48'   // 192px
   };
 
+  // Motion-First 2026 - Animações disponíveis
+  const animations = {
+    float: 'animate-float',
+    breathe: 'animate-breathe',
+    bounce: 'animate-bounceIn',
+    wave: 'animate-wave',
+    heartbeat: 'animate-heartbeat',
+    pop: 'animate-popIn',
+    wiggle: 'animate-wiggle',
+    none: ''
+  };
+
   const MascotSrc = mascots[variant] || mascots.default;
   const sizeClass = sizes[size] || sizes.md;
-  const animationClass = animated ? 'animate-float' : '';
+  const animationClass = animated ? (animations[animation] || animations.float) : '';
 
   return (
     <img
       src={MascotSrc}
       alt={alt}
-      className={`${sizeClass} ${animationClass} ${className}`}
+      className={`${sizeClass} ${animationClass} transition-transform duration-200 hover:scale-105 ${className}`}
       draggable="false"
     />
   );
@@ -110,12 +125,15 @@ export const ZeniSuccess = ({ message = 'Feito!' }) => {
 
 /**
  * Zeni para alertas de orçamento
+ * Motion-First 2026 - Com animações de atenção
  */
 export const ZeniBudgetAlert = ({ message = 'Atenção com os gastos!' }) => {
   return (
-    <div className="flex items-center gap-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg animate-shake">
-      <ZeniMascot variant="worried" size="md" />
-      <span className="text-amber-300 text-sm">{message}</span>
+    <div className="flex items-center gap-3 p-4 glass-card rounded-2xl border border-amber-500/30 animate-shake shadow-warm-md">
+      <div className="animate-wiggle">
+        <ZeniMascot variant="worried" size="md" />
+      </div>
+      <span className="text-amber-300 text-sm font-medium">{message}</span>
     </div>
   );
 };
@@ -164,6 +182,7 @@ export const ZeniEmpty = ({
 
 /**
  * Zeni para erros
+ * Motion-First 2026
  */
 export const ZeniError = ({
   title = 'Ops! Algo deu errado',
@@ -171,8 +190,8 @@ export const ZeniError = ({
   onRetry
 }) => {
   return (
-    <div className="flex flex-col items-center gap-4 py-8 animate-shake">
-      <ZeniMascot variant="worried" size="xl" />
+    <div className="flex flex-col items-center gap-4 py-8 animate-rubberBand">
+      <ZeniMascot variant="worried" size="xl" animated animation="heartbeat" />
       <div className="text-center">
         <h3 className="text-lg font-medium text-red-400">{title}</h3>
         <p className="text-zeni-muted text-sm">{subtitle}</p>
@@ -180,11 +199,65 @@ export const ZeniError = ({
       {onRetry && (
         <button
           onClick={onRetry}
-          className="mt-2 px-4 py-2 bg-zeni-primary hover:bg-emerald-600 text-white rounded-lg transition-colors press-effect"
+          className="mt-2 px-4 py-2.5 gradient-primary hover:shadow-glow text-white rounded-xl transition-all duration-200 btn-press"
         >
           Tentar novamente
         </button>
       )}
+    </div>
+  );
+};
+
+/**
+ * Zeni Celebration - Para celebrar conquistas
+ * Motion-First 2026
+ */
+export const ZeniCelebration = ({
+  message = 'Parabéns!',
+  subMessage = ''
+}) => {
+  return (
+    <div className="flex flex-col items-center gap-4 py-8 relative">
+      {/* Confetti particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(12)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-2 h-2 rounded-sm animate-confetti"
+            style={{
+              left: `${20 + Math.random() * 60}%`,
+              top: '40%',
+              backgroundColor: ['#10B981', '#34D399', '#FBBF24', '#F472B6', '#3B82F6'][i % 5],
+              animationDelay: `${Math.random() * 0.5}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="animate-bounceIn">
+        <ZeniMascot variant="happy" size="xl" animated animation="wave" />
+      </div>
+      <div className="text-center animate-slideUp">
+        <h3 className="text-xl font-bold gradient-primary-text">{message}</h3>
+        {subMessage && <p className="text-zeni-muted text-sm mt-1">{subMessage}</p>}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Typing Indicator - Zeni pensando
+ * Motion-First 2026
+ */
+export const ZeniTyping = () => {
+  return (
+    <div className="flex items-center gap-3">
+      <ZeniMascot variant="thinking" size="sm" animated animation="breathe" />
+      <div className="flex gap-1">
+        <span className="typing-dot w-2 h-2 bg-zeni-primary rounded-full" />
+        <span className="typing-dot w-2 h-2 bg-zeni-primary rounded-full" />
+        <span className="typing-dot w-2 h-2 bg-zeni-primary rounded-full" />
+      </div>
     </div>
   );
 };

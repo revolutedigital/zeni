@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
-import { Send, Image, User } from 'lucide-react'
+import { Send, Image, User, Sparkles } from 'lucide-react'
 import { sendMessage, getChatHistory } from '../services/api'
-import ZeniMascot, { ZeniWelcome } from '../components/ZeniMascot'
+import ZeniMascot, { ZeniWelcome, ZeniTyping } from '../components/ZeniMascot'
+import { QuickActionsGrid, ContextualSuggestions } from '../components/QuickActions'
+import { useZeniPersonality } from '../hooks/useZeniPersonality'
 
 // Configuração dos agentes com cores e variante da Zeni
 const AGENTS = {
@@ -164,6 +166,17 @@ export default function Chat() {
   const fileInputRef = useRef(null)
   const inputRef = useRef(null)
 
+  // Personality system
+  const { greeting, react, setLoading: setZeniLoading } = useZeniPersonality()
+
+  // Determinar período do dia para sugestões contextuais
+  const getTimePeriod = () => {
+    const hour = new Date().getHours()
+    if (hour >= 5 && hour < 12) return 'morning'
+    if (hour >= 12 && hour < 18) return 'afternoon'
+    return 'evening'
+  }
+
   useEffect(() => {
     loadHistory()
   }, [])
@@ -298,26 +311,43 @@ export default function Chat() {
     }
   }
 
+  // Handler para QuickActions
+  const handleQuickAction = (prompt) => {
+    setInput(prompt)
+    inputRef.current?.focus()
+  }
+
+  // Handler para upload via QuickActions
+  const handleQuickUpload = () => {
+    fileInputRef.current?.click()
+  }
+
   if (loadingHistory) {
     return (
       <div
-        className="flex items-center justify-center h-64"
+        className="flex flex-col items-center justify-center h-64 gap-4"
         role="status"
         aria-label="Carregando histórico de conversas"
       >
-        <div className="text-zeni-muted">Carregando...</div>
+        <ZeniTyping />
+        <div className="text-zeni-muted text-sm animate-pulse">Carregando...</div>
       </div>
     )
   }
 
   return (
     <div className="flex flex-col h-[calc(100vh-180px)]">
-      {/* Header */}
-      <header className="mb-4">
-        <h1 className="page-title" id="chat-title">Chat com IA</h1>
-        <p className="page-subtitle">
-          4 agentes especializados prontos para ajudar
-        </p>
+      {/* Header - Chat-Centric 2026 */}
+      <header className="mb-4 flex items-center justify-between">
+        <div>
+          <h1 className="page-title flex items-center gap-2" id="chat-title">
+            <Sparkles size={24} className="text-zeni-primary" />
+            Fala com a Zeni
+          </h1>
+          <p className="page-subtitle">
+            {greeting}
+          </p>
+        </div>
       </header>
 
       {/* Messages */}
@@ -330,107 +360,73 @@ export default function Chat() {
       >
         {showExamples && messages.length === 0 && (
           <div className="space-y-6">
-            {/* Zeni Welcome */}
-            <ZeniWelcome
-              title="Oi! Eu sou a Zeni!"
-              subtitle="Quer organizar? Fala comigo!"
-            />
-
-            {/* Agentes Grid com Zeni */}
-            <div
-              className="grid grid-cols-2 gap-3"
-              role="list"
-              aria-label="Agentes disponíveis"
-            >
-              {Object.entries(AGENTS).filter(([id]) => id !== 'registrar_vision').map(([id, agent]) => {
-                return (
-                  <article
-                    key={id}
-                    className={`${agent.bgColor} rounded-xl p-3 border ${agent.borderColor}`}
-                    role="listitem"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <ZeniMascot variant={agent.zeniVariant} size="xs" />
-                      <span className={`font-medium text-sm ${agent.color}`}>{agent.name}</span>
-                    </div>
-                    <p className="text-xs text-zeni-muted">{agent.description}</p>
-                  </article>
-                )
-              })}
+            {/* Zeni Welcome - Chat-Centric 2026 */}
+            <div className="text-center py-4">
+              <div className="animate-float mb-4">
+                <ZeniMascot variant="waving" size="full" animated animation="wave" />
+              </div>
+              <h2 className="text-xl font-bold gradient-primary-text mb-2">
+                Oi! Eu sou a Zeni!
+              </h2>
+              <p className="text-zeni-muted text-sm">
+                Sua assistente financeira pessoal. Fala comigo!
+              </p>
             </div>
 
-            {/* Exemplos por Agente */}
-            <nav className="space-y-4" aria-label="Exemplos de mensagens">
-              <h2 className="text-sm font-medium text-zeni-muted">Experimente:</h2>
+            {/* Quick Actions Grid - Chat-Centric 2026 */}
+            <div className="glass-card rounded-2xl p-4 shadow-warm-md">
+              <h3 className="text-sm font-medium text-zeni-muted mb-3">O que você quer fazer?</h3>
+              <QuickActionsGrid
+                onAction={handleQuickAction}
+                onUpload={handleQuickUpload}
+                disabled={loading}
+              />
+            </div>
 
-              {/* Registrador */}
-              <div role="group" aria-label="Exemplos para registrar transações">
-                <p className="text-xs text-emerald-400 mb-2">📝 Registrar transações:</p>
-                <div className="flex flex-wrap gap-2">
-                  {['50 mercado', 'almocei 35 reais', 'uber 23,90', 'recebi 5000 de salário'].map(ex => (
-                    <button
-                      key={ex}
-                      onClick={() => handleExampleClick(ex)}
-                      className="bg-emerald-400/10 text-emerald-400 text-sm px-3 py-1 rounded-full hover:bg-emerald-400/20 transition-colors"
-                      aria-label={`Usar exemplo: ${ex}`}
-                    >
-                      {ex}
-                    </button>
-                  ))}
-                </div>
+            {/* Agentes compactos */}
+            <div className="glass-card rounded-2xl p-4 shadow-warm-sm">
+              <h3 className="text-sm font-medium text-zeni-muted mb-3">Nossos agentes especializados</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(AGENTS).filter(([id]) => id !== 'registrar_vision').map(([id, agent]) => (
+                  <div
+                    key={id}
+                    className={`flex items-center gap-2 p-2 rounded-xl ${agent.bgColor} border ${agent.borderColor}`}
+                  >
+                    <ZeniMascot variant={agent.zeniVariant} size="xs" />
+                    <div className="min-w-0">
+                      <span className={`font-medium text-xs ${agent.color}`}>{agent.name}</span>
+                      <p className="text-[10px] text-zeni-muted truncate">{agent.description}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
+            </div>
 
-              {/* CFO */}
-              <div role="group" aria-label="Exemplos de análises financeiras">
-                <p className="text-xs text-blue-400 mb-2">📊 Análises financeiras:</p>
-                <div className="flex flex-wrap gap-2">
-                  {['Como estou esse mês?', 'Quanto gastei em restaurante?', 'Onde mais gasto?'].map(ex => (
-                    <button
-                      key={ex}
-                      onClick={() => handleExampleClick(ex)}
-                      className="bg-blue-400/10 text-blue-400 text-sm px-3 py-1 rounded-full hover:bg-blue-400/20 transition-colors"
-                      aria-label={`Usar exemplo: ${ex}`}
-                    >
-                      {ex}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            {/* Sugestões Contextuais */}
+            <div>
+              <h3 className="text-xs font-medium text-zeni-muted mb-2">Sugestões para agora:</h3>
+              <ContextualSuggestions
+                context={getTimePeriod()}
+                onSelect={handleQuickAction}
+              />
+            </div>
 
-              {/* Guardião */}
-              <div role="group" aria-label="Exemplos para consultar orçamento">
-                <p className="text-xs text-amber-400 mb-2">🛡️ Consultar orçamento:</p>
-                <div className="flex flex-wrap gap-2">
-                  {['Posso gastar 200 no restaurante?', 'Dá pra comprar um tênis de 300?'].map(ex => (
-                    <button
-                      key={ex}
-                      onClick={() => handleExampleClick(ex)}
-                      className="bg-amber-400/10 text-amber-400 text-sm px-3 py-1 rounded-full hover:bg-amber-400/20 transition-colors"
-                      aria-label={`Usar exemplo: ${ex}`}
-                    >
-                      {ex}
-                    </button>
-                  ))}
-                </div>
+            {/* Exemplos rápidos */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-medium text-zeni-muted">Ou experimente digitar:</h3>
+              <div className="flex flex-wrap gap-2">
+                {['50 mercado', 'almocei 35 reais', 'como estou esse mês?', 'onde mais gasto?'].map(ex => (
+                  <button
+                    key={ex}
+                    onClick={() => handleExampleClick(ex)}
+                    className="bg-zeni-card/50 text-zeni-muted text-xs px-3 py-1.5 rounded-full border border-zeni-border hover:border-zeni-primary/50 hover:text-zeni-primary transition-all"
+                    aria-label={`Usar exemplo: ${ex}`}
+                  >
+                    {ex}
+                  </button>
+                ))}
               </div>
-
-              {/* Educador */}
-              <div role="group" aria-label="Exemplos para aprender sobre finanças">
-                <p className="text-xs text-purple-400 mb-2">📚 Aprender finanças:</p>
-                <div className="flex flex-wrap gap-2">
-                  {['O que é CDI?', 'O que é reserva de emergência?', 'Vale a pena parcelar?'].map(ex => (
-                    <button
-                      key={ex}
-                      onClick={() => handleExampleClick(ex)}
-                      className="bg-purple-400/10 text-purple-400 text-sm px-3 py-1 rounded-full hover:bg-purple-400/20 transition-colors"
-                      aria-label={`Usar exemplo: ${ex}`}
-                    >
-                      {ex}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </nav>
+            </div>
           </div>
         )}
 
@@ -440,7 +436,8 @@ export default function Chat() {
           return (
             <article
               key={i}
-              className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-slideUp`}
+              style={{ animationDelay: `${i * 0.05}s` }}
               aria-label={msg.role === 'user' ? 'Sua mensagem' : `Mensagem de ${agentConfig?.name || 'Zeni'}`}
             >
               {msg.role === 'assistant' && (
@@ -451,19 +448,21 @@ export default function Chat() {
                   <ZeniMascot
                     variant={agentConfig?.zeniVariant || 'default'}
                     size="sm"
+                    animated
+                    animation="breathe"
                   />
                 </div>
               )}
 
               <div
-                className={`max-w-[80%] rounded-xl px-4 py-3 ${
+                className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-warm-sm ${
                   msg.role === 'user'
-                    ? 'bg-zeni-primary text-white'
-                    : `bg-zeni-card border ${agentConfig?.borderColor || 'border-slate-700'}`
+                    ? 'gradient-primary text-white shadow-glow'
+                    : `glass-card border ${agentConfig?.borderColor || 'border-zeni-border'}`
                 }`}
               >
                 {msg.role === 'assistant' && agentConfig && (
-                  <p className={`text-xs ${agentConfig.color} mb-1 font-medium`}>
+                  <p className={`text-xs ${agentConfig.color} mb-1 font-medium flex items-center gap-1`}>
                     <span aria-hidden="true">{agentConfig.emoji}</span> {agentConfig.name}
                   </p>
                 )}
@@ -472,10 +471,10 @@ export default function Chat() {
 
               {msg.role === 'user' && (
                 <div
-                  className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center flex-shrink-0"
+                  className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center flex-shrink-0 shadow-glow"
                   aria-hidden="true"
                 >
-                  <User size={18} />
+                  <User size={18} className="text-white" />
                 </div>
               )}
             </article>
@@ -484,15 +483,13 @@ export default function Chat() {
 
         {loading && (
           <div
-            className="flex gap-3 items-center"
+            className="flex gap-3 items-center animate-slideUp"
             role="status"
             aria-label="Zeni está pensando"
           >
-            <div className="animate-pulse">
-              <ZeniMascot variant="thinking" size="md" />
-            </div>
-            <div className="bg-zeni-card rounded-xl px-4 py-2">
-              <p className="text-zeni-muted">Pensando...</p>
+            <ZeniMascot variant="thinking" size="md" animated animation="breathe" />
+            <div className="glass-card rounded-2xl px-4 py-3 shadow-warm-sm border border-zeni-border">
+              <ZeniTyping />
             </div>
           </div>
         )}
@@ -500,10 +497,10 @@ export default function Chat() {
         <div ref={messagesEndRef} />
       </section>
 
-      {/* Input */}
+      {/* Input - Chat-Centric 2026 */}
       <form
         onSubmit={handleSend}
-        className="flex gap-2"
+        className="glass-card rounded-2xl p-2 flex gap-2 shadow-warm-md border border-zeni-border"
         aria-label="Enviar mensagem para Zeni"
       >
         <input
@@ -518,7 +515,7 @@ export default function Chat() {
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="bg-zeni-card hover:bg-slate-600 p-3 rounded-xl transition-colors"
+          className="p-3 rounded-xl hover:bg-zeni-card transition-all duration-200 btn-press"
           disabled={loading}
           aria-label="Enviar comprovante ou imagem"
           title="Enviar comprovante"
@@ -535,8 +532,8 @@ export default function Chat() {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Digite uma mensagem..."
-          className="flex-1 bg-zeni-card border border-slate-600 rounded-xl px-4 py-2"
+          placeholder="Fala com a Zeni..."
+          className="flex-1 bg-transparent border-none outline-none px-2 py-2 text-zeni-text placeholder:text-zeni-muted/50"
           disabled={loading}
           aria-describedby="chat-title"
         />
@@ -544,11 +541,11 @@ export default function Chat() {
         <button
           type="submit"
           disabled={loading || !input.trim()}
-          className="bg-zeni-primary hover:bg-emerald-600 p-3 rounded-xl transition-colors disabled:opacity-50"
+          className="gradient-primary p-3 rounded-xl transition-all duration-200 disabled:opacity-50 shadow-glow hover:shadow-glow-lg btn-press"
           aria-label="Enviar mensagem"
           title="Enviar"
         >
-          <Send size={20} aria-hidden="true" />
+          <Send size={20} className="text-white" aria-hidden="true" />
         </button>
       </form>
     </div>

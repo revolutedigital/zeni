@@ -26,16 +26,17 @@ const Input = forwardRef(({
   const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`
   const helperId = `${inputId}-helper`
 
-  const baseStyles = 'w-full bg-zeni-dark border rounded-lg transition-all duration-200 text-zeni-text placeholder:text-zeni-muted'
+  // Warm Minimalism 2026 - Border radius aumentado
+  const baseStyles = 'w-full bg-zeni-dark border rounded-xl transition-all duration-200 text-zeni-text placeholder:text-zeni-muted shadow-warm-sm'
 
   const sizes = {
     sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-base',
+    md: 'px-4 py-2.5 text-base',
     lg: 'px-4 py-3 text-lg'
   }
 
   const states = {
-    default: 'border-slate-600 focus:border-zeni-primary focus:ring-2 focus:ring-zeni-primary/20',
+    default: 'border-zeni-border focus:border-zeni-primary focus:ring-2 focus:ring-zeni-primary/20 focus:shadow-glow',
     error: 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20',
     success: 'border-emerald-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20'
   }

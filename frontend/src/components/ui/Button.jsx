@@ -2,8 +2,9 @@ import { forwardRef } from 'react'
 
 /**
  * Button - Componente de botão do Design System Zeni
+ * Warm Minimalism 2026 Edition
  *
- * @param {string} variant - 'primary' | 'secondary' | 'ghost' | 'danger' | 'success'
+ * @param {string} variant - 'primary' | 'secondary' | 'ghost' | 'danger' | 'success' | 'gradient'
  * @param {string} size - 'sm' | 'md' | 'lg'
  * @param {boolean} loading - Estado de carregamento
  * @param {boolean} fullWidth - Largura total
@@ -23,14 +24,17 @@ const Button = forwardRef(({
   type = 'button',
   ...props
 }, ref) => {
+  // Warm Minimalism 2026 - Border radius aumentado
   const baseStyles = 'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-zeni-dark'
 
   const variants = {
-    primary: 'bg-zeni-primary hover:bg-emerald-600 active:bg-emerald-700 text-white focus-visible:ring-zeni-primary disabled:bg-emerald-800',
-    secondary: 'bg-zeni-card hover:bg-slate-600 active:bg-slate-500 text-zeni-text border border-slate-600 focus-visible:ring-slate-500',
+    primary: 'bg-zeni-primary hover:bg-zeni-primary-dark active:bg-emerald-700 text-white focus-visible:ring-zeni-primary shadow-warm-sm hover:shadow-warm-md disabled:bg-emerald-800',
+    secondary: 'bg-zeni-card hover:bg-slate-600 active:bg-slate-500 text-zeni-text border border-zeni-border focus-visible:ring-slate-500 shadow-warm-sm',
     ghost: 'bg-transparent hover:bg-slate-700/50 active:bg-slate-700 text-zeni-muted hover:text-zeni-text',
-    danger: 'bg-red-600 hover:bg-red-700 active:bg-red-800 text-white focus-visible:ring-red-500',
-    success: 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white focus-visible:ring-emerald-500'
+    danger: 'bg-red-600 hover:bg-red-700 active:bg-red-800 text-white focus-visible:ring-red-500 shadow-warm-sm',
+    success: 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white focus-visible:ring-emerald-500 shadow-warm-sm',
+    // Gradiente primário 2026
+    gradient: 'gradient-primary hover:shadow-glow active:opacity-90 text-white focus-visible:ring-zeni-primary shadow-warm-md',
   }
 
   const sizes = {
