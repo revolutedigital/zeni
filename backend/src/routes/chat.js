@@ -214,11 +214,25 @@ router.post('/', upload.single('image'), async (req, res) => {
     // Buscar contexto (passando a mensagem para detectar período)
     const context = await getUserContext(req.userId, message);
 
+    // NOVO: Buscar histórico recente da conversa para manter contexto
+    const historyResult = await pool.query(`
+      SELECT role, content FROM chat_history
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+      LIMIT 20
+    `, [req.userId]);
+
+    // Reverter para ordem cronológica (mais antiga primeiro)
+    const conversationHistory = historyResult.rows
+      .reverse()
+      .map(row => ({ role: row.role, content: row.content }));
+
     // Preparar contexto para o agente
     const agentContext = {
       data: context,
       hasImage,
-      budgetAlerts: context.budgetAlerts
+      budgetAlerts: context.budgetAlerts,
+      conversationHistory // Passar histórico para o orchestrator
     };
 
     if (hasImage) {
@@ -226,11 +240,11 @@ router.post('/', upload.single('image'), async (req, res) => {
       agentContext.mimeType = req.file.mimetype;
     }
 
-    // Determinar agente
-    const agent = routeToAgent(message || '', agentContext);
+    // Determinar agente (agora com histórico para detectar continuação)
+    const agent = routeToAgent(message || '', agentContext, conversationHistory);
 
-    // Executar agente
-    const response = await executeAgent(agent, message || 'Analise esta imagem', agentContext);
+    // Executar agente (agora com histórico para manter contexto)
+    const response = await executeAgent(agent, message || 'Analise esta imagem', agentContext, conversationHistory);
 
     // Salvar no histórico
     await pool.query(

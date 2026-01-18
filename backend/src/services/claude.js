@@ -8,13 +8,24 @@ const anthropic = new Anthropic({
 });
 
 // Chamar Claude com modelo específico
-export async function callClaude(systemPrompt, userMessage, model = 'claude-3-haiku-20240307') {
+// Agora suporta histórico de conversa para manter contexto
+export async function callClaude(systemPrompt, userMessage, model = 'claude-3-haiku-20240307', conversationHistory = []) {
   try {
+    // Construir array de mensagens com histórico
+    const messages = [
+      // Histórico anterior (últimas mensagens)
+      ...conversationHistory
+        .filter(msg => msg.role === 'user' || msg.role === 'assistant')
+        .map(msg => ({ role: msg.role, content: msg.content })),
+      // Mensagem atual do usuário
+      { role: 'user', content: userMessage }
+    ];
+
     const response = await anthropic.messages.create({
       model,
       max_tokens: 1024,
       system: systemPrompt,
-      messages: [{ role: 'user', content: userMessage }],
+      messages,
     });
 
     return response.content[0].text;

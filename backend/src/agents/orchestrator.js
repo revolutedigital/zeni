@@ -122,11 +122,35 @@ function hasCFOIntent(input) {
 // ROTEADOR PRINCIPAL
 // ============================================
 
-export function routeToAgent(userInput, context = {}) {
+// Detectar contexto da conversa anterior para manter continuidade
+function detectConversationContext(conversationHistory = []) {
+  if (conversationHistory.length < 2) return null;
+
+  // Pegar última resposta do assistente
+  const lastAssistantMsg = [...conversationHistory]
+    .reverse()
+    .find(msg => msg.role === 'assistant')?.content?.toLowerCase() || '';
+
+  // Detectar se a conversa anterior era sobre orçamento
+  const isBudgetContext = /orçamento|budget|planejamento|definir.*limite|criar.*meta/i.test(lastAssistantMsg);
+
+  // Detectar se era análise financeira
+  const isAnalysisContext = /gastou|gasto|despesa|categoria|maiores|resumo/i.test(lastAssistantMsg);
+
+  // Detectar se estava perguntando algo
+  const wasAsking = /\?|quer|gostaria|posso ajudar|deseja/i.test(lastAssistantMsg);
+
+  return { isBudgetContext, isAnalysisContext, wasAsking, lastAssistantMsg };
+}
+
+export function routeToAgent(userInput, context = {}, conversationHistory = []) {
   const input = userInput.toLowerCase().trim();
 
-  // Debug log (pode ser removido em produção)
+  // Debug log
   console.log(`[Orchestrator] Input: "${input.substring(0, 50)}..."`);
+
+  // Analisar contexto da conversa anterior
+  const convContext = detectConversationContext(conversationHistory);
 
   // 1. Se tem imagem, vai pro registrador com vision
   if (context.hasImage) {
@@ -134,32 +158,55 @@ export function routeToAgent(userInput, context = {}) {
     return 'registrar_vision';
   }
 
-  // 2. PRIORIDADE: Se é análise financeira (CFO) - verificar ANTES de transação
-  // Isso evita que "como foi meu 2024" vá pro registrador por causa do número
+  // 2. NOVO: Se é resposta curta a uma pergunta anterior, manter o agente
+  const isShortResponse = input.length < 30 && /^(sim|não|quero|ok|isso|pode|claro|bora|vamos|por favor|ajuda)/.test(input);
+
+  if (isShortResponse && convContext?.wasAsking) {
+    // Se estava falando de orçamento, vai pro guardian (criação de orçamento)
+    if (convContext.isBudgetContext) {
+      console.log('[Orchestrator] → Agente: guardian (continuação - orçamento)');
+      return 'guardian';
+    }
+    // Se estava fazendo análise, continua com CFO
+    if (convContext.isAnalysisContext) {
+      console.log('[Orchestrator] → Agente: cfo (continuação - análise)');
+      return 'cfo';
+    }
+  }
+
+  // 3. NOVO: Detectar pedido de recomendação/sugestão após análise
+  if (/o que.*(indica|recomenda|sugere|aconselha)|me (ajuda|ajude)|como (faço|fazer)/i.test(input)) {
+    if (convContext?.isAnalysisContext || convContext?.isBudgetContext) {
+      console.log('[Orchestrator] → Agente: cfo (pedido de recomendação)');
+      return 'cfo';
+    }
+  }
+
+  // 4. PRIORIDADE: Se é análise financeira (CFO)
   if (hasCFOIntent(input)) {
     console.log('[Orchestrator] → Agente: cfo (análise financeira)');
     return 'cfo';
   }
 
-  // 3. Se precisa de validação/consulta de gasto
+  // 5. Se precisa de validação/consulta de gasto
   if (hasGuardianIntent(input, context)) {
     console.log('[Orchestrator] → Agente: guardian (consulta de gasto)');
     return 'guardian';
   }
 
-  // 4. Se é pergunta conceitual/educacional
+  // 6. Se é pergunta conceitual/educacional
   if (hasEducationalIntent(input)) {
     console.log('[Orchestrator] → Agente: educator (pergunta educacional)');
     return 'educator';
   }
 
-  // 5. Se parece uma transação (registro de gasto/receita)
+  // 7. Se parece uma transação (registro de gasto/receita)
   if (hasTransactionIntent(input)) {
     console.log('[Orchestrator] → Agente: registrar (transação detectada)');
     return 'registrar';
   }
 
-  // 6. Default: CFO para perguntas gerais sobre finanças
+  // 8. Default: CFO para perguntas gerais sobre finanças
   console.log('[Orchestrator] → Agente: cfo (default)');
   return 'cfo';
 }
@@ -168,7 +215,7 @@ export function routeToAgent(userInput, context = {}) {
 // EXECUTOR DE AGENTES
 // ============================================
 
-export async function executeAgent(agent, userInput, context = {}) {
+export async function executeAgent(agent, userInput, context = {}, conversationHistory = []) {
   const today = new Date().toISOString().split('T')[0];
   const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
@@ -180,7 +227,10 @@ export async function executeAgent(agent, userInput, context = {}) {
   // Informações de data para o registrador
   const dateContext = `\n\nData de hoje: ${today}\nData de ontem: ${yesterday}`;
 
-  console.log(`[Orchestrator] Executando agente: ${agent}`);
+  // Limitar histórico para não exceder tokens (últimas 10 mensagens = 5 turnos)
+  const recentHistory = conversationHistory.slice(-10);
+
+  console.log(`[Orchestrator] Executando agente: ${agent} (com ${recentHistory.length} msgs de histórico)`);
 
   switch (agent) {
     case 'registrar': {
@@ -190,7 +240,8 @@ export async function executeAgent(agent, userInput, context = {}) {
         .replace(/\{\{DATA_ONTEM\}\}/g, yesterday);
       prompt += dateContext;
 
-      return await callClaude(prompt, userInput, 'claude-3-haiku-20240307');
+      // Registrador não precisa de histórico longo
+      return await callClaude(prompt, userInput, 'claude-3-haiku-20240307', []);
     }
 
     case 'registrar_vision': {
@@ -200,24 +251,26 @@ export async function executeAgent(agent, userInput, context = {}) {
 
     case 'cfo': {
       const prompt = CFO_PROMPT + contextStr;
-      return await callClaude(prompt, userInput, 'claude-sonnet-4-20250514');
+      // CFO recebe histórico para manter contexto de análise
+      return await callClaude(prompt, userInput, 'claude-sonnet-4-20250514', recentHistory);
     }
 
     case 'guardian': {
       const prompt = GUARDIAN_PROMPT + contextStr;
-      return await callClaude(prompt, userInput, 'claude-sonnet-4-20250514');
+      // Guardian recebe histórico para criação de orçamento em múltiplos turnos
+      return await callClaude(prompt, userInput, 'claude-sonnet-4-20250514', recentHistory);
     }
 
     case 'educator': {
       // Educador também recebe contexto para personalizar exemplos
       const prompt = EDUCATOR_PROMPT + contextStr;
-      return await callClaude(prompt, userInput, 'claude-3-haiku-20240307');
+      return await callClaude(prompt, userInput, 'claude-3-haiku-20240307', recentHistory);
     }
 
     default: {
       // Fallback para CFO
       console.log(`[Orchestrator] Agente desconhecido "${agent}", usando CFO`);
-      return await callClaude(CFO_PROMPT + contextStr, userInput, 'claude-sonnet-4-20250514');
+      return await callClaude(CFO_PROMPT + contextStr, userInput, 'claude-sonnet-4-20250514', recentHistory);
     }
   }
 }
