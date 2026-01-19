@@ -302,6 +302,48 @@ router.post('/', upload.single('image'), async (req, res) => {
       }
     }
 
+    // Se CFO retornou ação de criar orçamentos, executar
+    if (agent === 'cfo') {
+      try {
+        const parsed = JSON.parse(response);
+        if (parsed.action === 'create_budgets' && parsed.budgets) {
+          console.log('[Chat] CFO retornou create_budgets, criando orçamentos...');
+
+          for (const budget of parsed.budgets) {
+            // Buscar category_id pelo nome
+            const catResult = await pool.query(
+              'SELECT id FROM categories WHERE name ILIKE $1 LIMIT 1',
+              [budget.category]
+            );
+
+            if (catResult.rows[0]) {
+              // Inserir ou atualizar orçamento
+              await pool.query(`
+                INSERT INTO budgets (user_id, category_id, amount, month, year)
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT (user_id, category_id, month, year)
+                DO UPDATE SET amount = $3
+              `, [
+                req.userId,
+                catResult.rows[0].id,
+                budget.amount,
+                context.month,
+                context.year
+              ]);
+              console.log(`[Chat] Orçamento criado: ${budget.category} = R$${budget.amount}`);
+            } else {
+              console.warn(`[Chat] Categoria não encontrada: ${budget.category}`);
+            }
+          }
+
+          // Substituir response pelo texto de confirmação
+          response = parsed.confirmation || parsed.message || 'Orçamentos criados com sucesso!';
+        }
+      } catch (e) {
+        // Não era JSON válido, só retorna a resposta
+      }
+    }
+
     res.json({
       agent,
       response,
