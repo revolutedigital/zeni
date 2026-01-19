@@ -70,6 +70,16 @@ CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
 CREATE INDEX IF NOT EXISTS idx_chat_user_date ON chat_history(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_budgets_user ON budgets(user_id, year, month);
 
+-- Tabela de estado de conversa (para continuidade do chat)
+CREATE TABLE IF NOT EXISTS conversation_state (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    state_data JSONB NOT NULL DEFAULT '{}',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Índice para estado de conversa
+CREATE INDEX IF NOT EXISTS idx_conversation_state_updated ON conversation_state(updated_at);
+
 -- Categorias padrão
 INSERT INTO categories (name, icon, color, type) VALUES
     ('Salário', 'wallet', '#22C55E', 'income'),

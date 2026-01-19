@@ -2,7 +2,11 @@ import { Router } from 'express';
 import multer from 'multer';
 import pool from '../db/connection.js';
 import { authMiddleware } from './auth.js';
-import { routeToAgent, executeAgent } from '../agents/orchestrator.js';
+import { routeToAgent, executeAgent, extractStateFromResponse } from '../agents/orchestrator.js';
+import {
+  getConversationState,
+  saveConversationState
+} from '../services/conversationState.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -214,7 +218,7 @@ router.post('/', upload.single('image'), async (req, res) => {
     // Buscar contexto (passando a mensagem para detectar período)
     const context = await getUserContext(req.userId, message);
 
-    // NOVO: Buscar histórico recente da conversa para manter contexto
+    // Buscar histórico recente da conversa para manter contexto
     const historyResult = await pool.query(`
       SELECT role, content FROM chat_history
       WHERE user_id = $1
@@ -227,12 +231,16 @@ router.post('/', upload.single('image'), async (req, res) => {
       .reverse()
       .map(row => ({ role: row.role, content: row.content }));
 
+    // NOVO: Buscar estado da conversa para continuidade
+    const conversationState = await getConversationState(req.userId);
+    console.log('[Chat] Estado da conversa:', JSON.stringify(conversationState));
+
     // Preparar contexto para o agente
     const agentContext = {
       data: context,
       hasImage,
       budgetAlerts: context.budgetAlerts,
-      conversationHistory // Passar histórico para o orchestrator
+      conversationHistory
     };
 
     if (hasImage) {
@@ -240,11 +248,17 @@ router.post('/', upload.single('image'), async (req, res) => {
       agentContext.mimeType = req.file.mimetype;
     }
 
-    // Determinar agente (agora com histórico para detectar continuação)
-    const agent = routeToAgent(message || '', agentContext, conversationHistory);
+    // Determinar agente (agora com estado de conversa)
+    const agent = routeToAgent(message || '', agentContext, conversationHistory, conversationState);
 
-    // Executar agente (agora com histórico para manter contexto)
-    const response = await executeAgent(agent, message || 'Analise esta imagem', agentContext, conversationHistory);
+    // Executar agente (com estado para instruções adicionais)
+    const response = await executeAgent(agent, message || 'Analise esta imagem', agentContext, conversationHistory, conversationState);
+
+    // NOVO: Extrair e salvar novo estado baseado na resposta
+    const newState = extractStateFromResponse(response, agent);
+    newState.turnCount = (conversationState?.turnCount || 0) + 1;
+    await saveConversationState(req.userId, newState);
+    console.log('[Chat] Novo estado salvo:', JSON.stringify(newState));
 
     // Salvar no histórico
     await pool.query(
