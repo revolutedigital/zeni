@@ -94,7 +94,7 @@ export const QuickActionsGrid = ({ onAction, onUpload, disabled = false }) => {
   const categories = [
     { id: 'register', label: 'Registrar', icon: Plus },
     { id: 'analyze', label: 'Analisar', icon: Calculator },
-    { id: 'goals', label: 'Metas', icon: Target },
+    { id: 'goals', label: 'Economia', icon: PiggyBank },
   ];
 
   const handleClick = (action) => {

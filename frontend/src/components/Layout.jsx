@@ -15,7 +15,7 @@ export default function Layout({ children, user, onLogout }) {
     { path: '/', icon: LayoutDashboard, label: 'Home', ariaLabel: 'Ir para Dashboard' },
     { path: '/transactions', icon: Receipt, label: 'Extrato', ariaLabel: 'Ver transações' },
     { path: '/chat', icon: MessageCircle, label: 'Zeni', ariaLabel: 'Conversar com a Zeni', isMain: true },
-    { path: '/budgets', icon: Target, label: 'Metas', ariaLabel: 'Gerenciar orçamentos' },
+    { path: '/budgets', icon: Target, label: 'Orçamentos', ariaLabel: 'Gerenciar orçamentos' },
   ]
 
   return (

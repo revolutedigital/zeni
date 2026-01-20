@@ -305,10 +305,28 @@ router.post('/', upload.single('image'), async (req, res) => {
     // Se CFO retornou ação de criar orçamentos, executar
     if (agent === 'cfo') {
       try {
-        const parsed = JSON.parse(response);
-        if (parsed.action === 'create_budgets' && parsed.budgets) {
-          console.log('[Chat] CFO retornou create_budgets, criando orçamentos...');
+        // Tentar extrair JSON da resposta (pode estar em markdown ```json ou puro)
+        let jsonStr = response;
 
+        // Se tem markdown code block, extrair o JSON de dentro
+        const jsonMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (jsonMatch) {
+          jsonStr = jsonMatch[1].trim();
+        }
+
+        // Tentar encontrar JSON no texto (começa com { e termina com })
+        const jsonObjectMatch = jsonStr.match(/\{[\s\S]*"action"[\s\S]*"create_budgets"[\s\S]*\}/);
+        if (jsonObjectMatch) {
+          jsonStr = jsonObjectMatch[0];
+        }
+
+        console.log('[Chat] CFO response (primeiros 500 chars):', response.substring(0, 500));
+
+        const parsed = JSON.parse(jsonStr);
+        if (parsed.action === 'create_budgets' && parsed.budgets) {
+          console.log('[Chat] CFO retornou create_budgets, criando orçamentos...', parsed.budgets);
+
+          let createdCount = 0;
           for (const budget of parsed.budgets) {
             // Buscar category_id pelo nome
             const catResult = await pool.query(
@@ -322,7 +340,7 @@ router.post('/', upload.single('image'), async (req, res) => {
                 INSERT INTO budgets (user_id, category_id, amount, month, year)
                 VALUES ($1, $2, $3, $4, $5)
                 ON CONFLICT (user_id, category_id, month, year)
-                DO UPDATE SET amount = $3
+                DO UPDATE SET amount = EXCLUDED.amount
               `, [
                 req.userId,
                 catResult.rows[0].id,
@@ -331,15 +349,19 @@ router.post('/', upload.single('image'), async (req, res) => {
                 context.year
               ]);
               console.log(`[Chat] Orçamento criado: ${budget.category} = R$${budget.amount}`);
+              createdCount++;
             } else {
               console.warn(`[Chat] Categoria não encontrada: ${budget.category}`);
             }
           }
 
+          console.log(`[Chat] Total de orçamentos criados: ${createdCount}`);
+
           // Substituir response pelo texto de confirmação
-          response = parsed.confirmation || parsed.message || 'Orçamentos criados com sucesso!';
+          response = parsed.confirmation || parsed.message || `✅ ${createdCount} orçamentos criados com sucesso!`;
         }
       } catch (e) {
+        console.log('[Chat] CFO response não é JSON de ação:', e.message);
         // Não era JSON válido, só retorna a resposta
       }
     }
