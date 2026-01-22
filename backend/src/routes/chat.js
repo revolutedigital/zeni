@@ -7,6 +7,7 @@ import {
   getConversationState,
   saveConversationState
 } from '../services/conversationState.js';
+import { trackEvent } from '../services/analytics.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -269,6 +270,13 @@ router.post('/', upload.single('image'), async (req, res) => {
       'INSERT INTO chat_history (user_id, role, content, agent) VALUES ($1, $2, $3, $4)',
       [req.userId, 'assistant', response, agent]
     );
+
+    // Track analytics event
+    trackEvent(req.userId, 'chat_message', {
+      agent,
+      hasImage,
+      messageLength: message?.length || 0
+    });
 
     // Se foi registro, tentar parsear e salvar transação
     if (agent === 'registrar' || agent === 'registrar_vision') {

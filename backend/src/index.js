@@ -10,7 +10,12 @@ import categoriesRouter from './routes/categories.js';
 import budgetsRouter from './routes/budgets.js';
 import chatRouter from './routes/chat.js';
 import authRouter from './routes/auth.js';
+import adminRouter from './routes/admin.js';
+import subscriptionRouter from './routes/subscription.js';
+import notificationsRouter from './routes/notifications.js';
+import alertsRouter from './routes/alerts.js';
 import { logger, httpLogger } from './services/logger.js';
+import { runPeriodicChecks } from './services/agenticActions.js';
 
 dotenv.config();
 
@@ -128,6 +133,10 @@ app.use('/api/chat', chatLimiter, chatRouter);
 app.use('/api/transactions', transactionsRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/budgets', budgetsRouter);
+app.use('/api/admin', adminRouter);
+app.use('/api/subscription', subscriptionRouter);
+app.use('/api/notifications', notificationsRouter);
+app.use('/api/alerts', alertsRouter);
 
 // ===========================================
 // HEALTH CHECK & METRICS
@@ -227,6 +236,24 @@ app.listen(PORT, () => {
   }, `Zeni API started`);
 
   console.log(`🚀 Zeni API rodando em http://localhost:${PORT}`);
+
+  // Iniciar job de ações agenticas (a cada 5 minutos)
+  if (isProduction) {
+    setInterval(() => {
+      runPeriodicChecks().catch(err => {
+        logger.error({ err }, 'Agentic actions job failed');
+      });
+    }, 5 * 60 * 1000); // 5 minutos
+
+    // Executar uma vez na inicialização (após 30 segundos)
+    setTimeout(() => {
+      runPeriodicChecks().catch(err => {
+        logger.error({ err }, 'Initial agentic check failed');
+      });
+    }, 30 * 1000);
+
+    console.log('🤖 Agentic actions job scheduled');
+  }
 });
 
 export default app;
