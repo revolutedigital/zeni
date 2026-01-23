@@ -253,7 +253,7 @@ router.post('/', upload.single('image'), async (req, res) => {
     const agent = routeToAgent(message || '', agentContext, conversationHistory, conversationState);
 
     // Executar agente (com estado para instruções adicionais)
-    const response = await executeAgent(agent, message || 'Analise esta imagem', agentContext, conversationHistory, conversationState);
+    let response = await executeAgent(agent, message || 'Analise esta imagem', agentContext, conversationHistory, conversationState);
 
     // NOVO: Extrair e salvar novo estado baseado na resposta
     const newState = extractStateFromResponse(response, agent);
@@ -304,8 +304,58 @@ router.post('/', upload.single('image'), async (req, res) => {
             hasImage ? 'photo' : 'text',
             parsed.transaction.paid !== undefined ? parsed.transaction.paid : true
           ]);
+
+          // Substituir resposta JSON pela mensagem de confirmação amigável
+          response = parsed.confirmation || `✅ Transação de R$${parsed.transaction.amount.toFixed(2)} registrada!`;
         }
       } catch (e) {
+        // Não era JSON válido, só retorna a resposta como está
+      }
+    }
+
+    // Se Planner retornou ação de criar objetivo, executar
+    if (agent === 'planner') {
+      try {
+        let jsonStr = response;
+
+        // Se tem markdown code block, extrair o JSON de dentro
+        const jsonMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (jsonMatch) {
+          jsonStr = jsonMatch[1].trim();
+        }
+
+        // Tentar encontrar JSON de create_goal
+        const jsonObjectMatch = jsonStr.match(/\{[\s\S]*"action"[\s\S]*"create_goal"[\s\S]*\}/);
+        if (jsonObjectMatch) {
+          jsonStr = jsonObjectMatch[0];
+        }
+
+        const parsed = JSON.parse(jsonStr);
+        if (parsed.action === 'create_goal' && parsed.goal) {
+          console.log('[Chat] Planner retornou create_goal, criando objetivo...', parsed.goal);
+
+          // Inserir objetivo no banco
+          const insertResult = await pool.query(`
+            INSERT INTO goals (user_id, name, description, target_amount, deadline, priority, category)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING id
+          `, [
+            req.userId,
+            parsed.goal.name,
+            parsed.goal.description || null,
+            parsed.goal.targetAmount,
+            parsed.goal.deadline || null,
+            parsed.goal.priority || 'medium',
+            parsed.goal.category || 'savings'
+          ]);
+
+          console.log(`[Chat] Objetivo criado com ID: ${insertResult.rows[0].id}`);
+
+          // Substituir response pela mensagem de confirmação
+          response = parsed.message || parsed.confirmation || `🎯 Objetivo "${parsed.goal.name}" criado com sucesso! Meta: R$${parsed.goal.targetAmount.toLocaleString('pt-BR')}`;
+        }
+      } catch (e) {
+        console.log('[Chat] Planner response não é JSON de ação:', e.message);
         // Não era JSON válido, só retorna a resposta
       }
     }

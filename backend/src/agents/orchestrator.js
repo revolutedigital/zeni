@@ -74,6 +74,14 @@ const PLANNER_PATTERNS = [
   /\bplanej(ar|o|amento)\b/i,
   /\bminha meta\b/i,
   /\bmeu objetivo\b/i,
+  // Padrões adicionais para capturar intenções de metas
+  /\d+.*\b(pra|para)\s+(viagem|viajar|carro|casa|apartamento|moto|casamento|festa|intercâmbio)\b/i,
+  /\b(viagem|viajar|carro|casa|apartamento|moto|casamento|festa|intercâmbio)\b.*\d+/i,
+  /\bjuntar\s+\d+/i,
+  /\bguardar\s+\d+/i,
+  /\beconomizar\s+\d+/i,
+  /\bpoupar\s+\d+/i,
+  /\bpreciso\s+de\s+\d+.*\b(pra|para)\b/i,
 ];
 
 // Padrões para análise CFO
