@@ -307,13 +307,13 @@ export async function executeAgent(agent, userInput, context = {}, conversationH
       // CFO recebe instrução de estado para saber como prosseguir
       const prompt = CFO_PROMPT + contextStr + stateInstruction;
       // CFO recebe histórico para manter contexto de análise
-      return await callClaude(prompt, userInput, 'claude-sonnet-4-20250514', recentHistory);
+      return await callClaude(prompt, userInput, 'claude-3-haiku-20240307', recentHistory);
     }
 
     case 'guardian': {
       const prompt = GUARDIAN_PROMPT + contextStr + stateInstruction;
       // Guardian recebe histórico para criação de orçamento em múltiplos turnos
-      return await callClaude(prompt, userInput, 'claude-sonnet-4-20250514', recentHistory);
+      return await callClaude(prompt, userInput, 'claude-3-haiku-20240307', recentHistory);
     }
 
     case 'educator': {
@@ -325,13 +325,13 @@ export async function executeAgent(agent, userInput, context = {}, conversationH
     case 'planner': {
       // Planner recebe contexto de objetivos e dados financeiros
       const prompt = PLANNER_PROMPT + contextStr + stateInstruction;
-      return await callClaude(prompt, userInput, 'claude-sonnet-4-20250514', recentHistory);
+      return await callClaude(prompt, userInput, 'claude-3-haiku-20240307', recentHistory);
     }
 
     default: {
       // Fallback para CFO
       console.log(`[Orchestrator] Agente desconhecido "${agent}", usando CFO`);
-      return await callClaude(CFO_PROMPT + contextStr + stateInstruction, userInput, 'claude-sonnet-4-20250514', recentHistory);
+      return await callClaude(CFO_PROMPT + contextStr + stateInstruction, userInput, 'claude-3-haiku-20240307', recentHistory);
     }
   }
 }

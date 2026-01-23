@@ -661,13 +661,13 @@ export const AGENT_METADATA = {
     name: 'CFO',
     emoji: '📊',
     description: 'Análises financeiras e resumos',
-    model: 'claude-sonnet-4-20250514'
+    model: 'claude-3-haiku-20240307' // Otimizado: Haiku para análises simples (12x mais barato)
   },
   guardian: {
     name: 'Guardião',
     emoji: '🛡️',
     description: 'Alertas e validação de gastos',
-    model: 'claude-sonnet-4-20250514'
+    model: 'claude-3-haiku-20240307' // Otimizado: Haiku suficiente para alertas
   },
   educator: {
     name: 'Educador',
@@ -679,6 +679,6 @@ export const AGENT_METADATA = {
     name: 'Planejador',
     emoji: '🎯',
     description: 'Objetivos e metas financeiras',
-    model: 'claude-sonnet-4-20250514'
+    model: 'claude-3-haiku-20240307' // Otimizado: Haiku para consultas simples
   }
 };

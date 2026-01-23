@@ -16,6 +16,11 @@ export async function analyzeGoalViability(userId, goalData) {
 
   const prompt = buildAnalysisPrompt(goalData, userData);
 
+  // IMPORTANTE: Usa Sonnet 4 APENAS aqui porque:
+  // 1. Análise complexa de viabilidade financeira (score 0-100)
+  // 2. Criação de plano de ação detalhado e personalizado
+  // 3. Chamado apenas 1x por objetivo (não em toda interação)
+  // Todos os outros agentes usam Haiku para economizar 12x no custo
   const response = await callClaude(
     PLANNER_SYSTEM_PROMPT,
     prompt,
