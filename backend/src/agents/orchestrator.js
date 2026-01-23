@@ -5,6 +5,7 @@ import {
   CFO_PROMPT,
   GUARDIAN_PROMPT,
   EDUCATOR_PROMPT,
+  PLANNER_PROMPT,
   AGENT_METADATA
 } from './prompts.js';
 import {
@@ -59,6 +60,20 @@ const GUARDIAN_PATTERNS = [
   /\bvou (gastar|comprar|pagar)\b/i,
   /\bquero (gastar|comprar|pagar)\b/i,
   /\bpreciso (gastar|comprar|pagar)\b/i,
+];
+
+// Padrões para planejamento de objetivos/metas
+const PLANNER_PATTERNS = [
+  /\b(meta|objetivo|sonho)\b/i,
+  /\bquero (juntar|guardar|economizar|poupar|acumular)\b/i,
+  /\bquero (comprar|viajar|fazer)\b/i,
+  /\bcomo (chego|alcanço|consigo|junto)\b/i,
+  /\bé possível (juntar|guardar|conseguir)\b/i,
+  /\bquanto (falta|preciso|tempo)\b.*\b(meta|objetivo|comprar|viagem)\b/i,
+  /\b(viagem|carro|casa|aposentadoria|faculdade|curso)\b.*\b(quanto|como|quando)\b/i,
+  /\bplanej(ar|o|amento)\b/i,
+  /\bminha meta\b/i,
+  /\bmeu objetivo\b/i,
 ];
 
 // Padrões para análise CFO
@@ -122,6 +137,10 @@ function hasGuardianIntent(input, context) {
 
 function hasCFOIntent(input) {
   return CFO_PATTERNS.some(pattern => pattern.test(input));
+}
+
+function hasPlannerIntent(input) {
+  return PLANNER_PATTERNS.some(pattern => pattern.test(input));
 }
 
 // ============================================
@@ -204,31 +223,37 @@ export function routeToAgent(userInput, context = {}, conversationHistory = [], 
     }
   }
 
-  // 5. PRIORIDADE: Se é análise financeira (CFO)
+  // 5. Se é sobre objetivos/metas financeiras
+  if (hasPlannerIntent(input)) {
+    console.log('[Orchestrator] → Agente: planner (objetivos/metas)');
+    return 'planner';
+  }
+
+  // 6. PRIORIDADE: Se é análise financeira (CFO)
   if (hasCFOIntent(input)) {
     console.log('[Orchestrator] → Agente: cfo (análise financeira)');
     return 'cfo';
   }
 
-  // 6. Se precisa de validação/consulta de gasto
+  // 7. Se precisa de validação/consulta de gasto
   if (hasGuardianIntent(input, context)) {
     console.log('[Orchestrator] → Agente: guardian (consulta de gasto)');
     return 'guardian';
   }
 
-  // 7. Se é pergunta conceitual/educacional
+  // 8. Se é pergunta conceitual/educacional
   if (hasEducationalIntent(input)) {
     console.log('[Orchestrator] → Agente: educator (pergunta educacional)');
     return 'educator';
   }
 
-  // 8. Se parece uma transação (registro de gasto/receita)
+  // 9. Se parece uma transação (registro de gasto/receita)
   if (hasTransactionIntent(input)) {
     console.log('[Orchestrator] → Agente: registrar (transação detectada)');
     return 'registrar';
   }
 
-  // 9. Default: CFO para perguntas gerais sobre finanças
+  // 10. Default: CFO para perguntas gerais sobre finanças
   console.log('[Orchestrator] → Agente: cfo (default)');
   return 'cfo';
 }
@@ -295,6 +320,12 @@ export async function executeAgent(agent, userInput, context = {}, conversationH
       // Educador também recebe contexto para personalizar exemplos
       const prompt = EDUCATOR_PROMPT + contextStr + stateInstruction;
       return await callClaude(prompt, userInput, 'claude-3-haiku-20240307', recentHistory);
+    }
+
+    case 'planner': {
+      // Planner recebe contexto de objetivos e dados financeiros
+      const prompt = PLANNER_PROMPT + contextStr + stateInstruction;
+      return await callClaude(prompt, userInput, 'claude-sonnet-4-20250514', recentHistory);
     }
 
     default: {

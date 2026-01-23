@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Receipt, MessageCircle, LogOut, Target, Plus } from 'lucide-react'
+import { LayoutDashboard, Receipt, MessageCircle, LogOut, Target, Trophy, Wallet } from 'lucide-react'
 import ZeniMascot from './ZeniMascot'
 
 /**
@@ -15,7 +15,8 @@ export default function Layout({ children, user, onLogout }) {
     { path: '/', icon: LayoutDashboard, label: 'Home', ariaLabel: 'Ir para Dashboard' },
     { path: '/transactions', icon: Receipt, label: 'Extrato', ariaLabel: 'Ver transações' },
     { path: '/chat', icon: MessageCircle, label: 'Zeni', ariaLabel: 'Conversar com a Zeni', isMain: true },
-    { path: '/budgets', icon: Target, label: 'Orçamentos', ariaLabel: 'Gerenciar orçamentos' },
+    { path: '/budgets', icon: Wallet, label: 'Orçamentos', ariaLabel: 'Gerenciar orçamentos' },
+    { path: '/goals', icon: Trophy, label: 'Objetivos', ariaLabel: 'Ver objetivos' },
   ]
 
   return (

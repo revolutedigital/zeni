@@ -14,6 +14,8 @@ import adminRouter from './routes/admin.js';
 import subscriptionRouter from './routes/subscription.js';
 import notificationsRouter from './routes/notifications.js';
 import alertsRouter from './routes/alerts.js';
+import onboardingRouter from './routes/onboarding.js';
+import goalsRouter from './routes/goals.js';
 import { logger, httpLogger } from './services/logger.js';
 import { runPeriodicChecks } from './services/agenticActions.js';
 
@@ -137,6 +139,8 @@ app.use('/api/admin', adminRouter);
 app.use('/api/subscription', subscriptionRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/alerts', alertsRouter);
+app.use('/api/onboarding', onboardingRouter);
+app.use('/api/goals', goalsRouter);
 
 // ===========================================
 // HEALTH CHECK & METRICS

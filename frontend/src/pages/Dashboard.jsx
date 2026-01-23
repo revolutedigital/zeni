@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, Wallet, ArrowRight, Target, AlertTriangle, ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, ArrowRight, Target, AlertTriangle, ChevronLeft, ChevronRight, Calendar, Trophy } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { getSummary, getTransactions, getBudgets } from '../services/api'
+import { getSummary, getTransactions, getBudgets, getGoalsSummary, getGoals } from '../services/api'
 
 function formatMoney(value) {
   return new Intl.NumberFormat('pt-BR', {
@@ -39,6 +39,8 @@ export default function Dashboard() {
   const [summary, setSummary] = useState(null)
   const [recent, setRecent] = useState([])
   const [budgets, setBudgets] = useState([])
+  const [goalsSummary, setGoalsSummary] = useState(null)
+  const [activeGoals, setActiveGoals] = useState([])
   const [loading, setLoading] = useState(true)
 
   const isCurrentMonth = month === now.getMonth() + 1 && year === now.getFullYear()
@@ -50,14 +52,18 @@ export default function Dashboard() {
     async function load() {
       setLoading(true)
       try {
-        const [summaryData, transactionsData, budgetsData] = await Promise.all([
+        const [summaryData, transactionsData, budgetsData, goalsData, goalsList] = await Promise.all([
           getSummary(month, year),
           getTransactions({ month, year, limit: 5 }),
-          getBudgets(month, year)
+          getBudgets(month, year),
+          getGoalsSummary().catch(() => null),
+          getGoals('active').catch(() => ({ goals: [] }))
         ])
         setSummary(summaryData)
         setRecent(transactionsData)
         setBudgets(budgetsData)
+        setGoalsSummary(goalsData)
+        setActiveGoals(goalsList.goals?.slice(0, 3) || [])
       } catch (error) {
         console.error('Erro ao carregar dashboard:', error)
       } finally {
@@ -319,6 +325,60 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+
+          {/* Objetivos */}
+          {activeGoals.length > 0 && (
+            <div className="bg-zeni-card rounded-xl p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Trophy size={20} className="text-yellow-500" />
+                  <h2 className="section-title">Meus Objetivos</h2>
+                </div>
+                <Link
+                  to="/goals"
+                  className="text-zeni-primary text-sm flex items-center gap-1 hover:underline"
+                >
+                  Ver todos <ArrowRight size={14} />
+                </Link>
+              </div>
+
+              {goalsSummary && (
+                <div className="grid grid-cols-3 gap-3 mb-4 text-center">
+                  <div className="bg-zeni-dark rounded-lg p-2">
+                    <p className="text-lg font-bold">{goalsSummary.activeCount}</p>
+                    <p className="text-xs text-zeni-muted">Ativos</p>
+                  </div>
+                  <div className="bg-zeni-dark rounded-lg p-2">
+                    <p className="text-lg font-bold text-emerald-400">{goalsSummary.overallProgress}%</p>
+                    <p className="text-xs text-zeni-muted">Progresso</p>
+                  </div>
+                  <div className="bg-zeni-dark rounded-lg p-2">
+                    <p className="text-lg font-bold">{formatMoney(goalsSummary.totalCurrent)}</p>
+                    <p className="text-xs text-zeni-muted">Acumulado</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                {activeGoals.map((goal) => (
+                  <Link
+                    key={goal.id}
+                    to={`/goals/${goal.id}`}
+                    className="block p-3 bg-zeni-dark rounded-lg hover:bg-slate-700 transition-colors"
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium">{goal.name}</span>
+                      <span className="text-sm text-zeni-muted">{goal.progressPercent}%</span>
+                    </div>
+                    <ProgressBar percent={goal.progressPercent} color="#10B981" />
+                    <p className="text-xs text-zeni-muted mt-1">
+                      {formatMoney(goal.currentAmount)} de {formatMoney(goal.targetAmount)}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* CTA para chat */}
           <Link
