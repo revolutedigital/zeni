@@ -92,11 +92,14 @@ describe('Schemas de Validação', () => {
   });
 
   describe('registerSchema', () => {
+    // Senha forte: 12+ chars, maiúscula, minúscula, número, especial
+    const strongPassword = 'SenhaForte123!';
+
     test('aceita registro válido', () => {
       const result = registerSchema.safeParse({
         name: 'João Silva',
         email: 'joao@example.com',
-        password: '123456',
+        password: strongPassword,
       });
       expect(result.success).toBe(true);
     });
@@ -105,7 +108,7 @@ describe('Schemas de Validação', () => {
       const result = registerSchema.safeParse({
         name: 'J',
         email: 'test@example.com',
-        password: '123456',
+        password: strongPassword,
       });
       expect(result.success).toBe(false);
     });
@@ -115,6 +118,24 @@ describe('Schemas de Validação', () => {
         name: 'João',
         email: 'test@example.com',
         password: '123',
+      });
+      expect(result.success).toBe(false);
+    });
+
+    test('rejeita senha sem caractere especial', () => {
+      const result = registerSchema.safeParse({
+        name: 'João',
+        email: 'test@example.com',
+        password: 'SenhaForte123',
+      });
+      expect(result.success).toBe(false);
+    });
+
+    test('rejeita senha sem maiúscula', () => {
+      const result = registerSchema.safeParse({
+        name: 'João',
+        email: 'test@example.com',
+        password: 'senhafraca123!',
       });
       expect(result.success).toBe(false);
     });

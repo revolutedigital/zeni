@@ -4,6 +4,8 @@
  * Testa se as mensagens são roteadas para os agentes corretos
  */
 
+import { jest } from '@jest/globals';
+
 // Mock do Claude API antes de importar
 const mockCallClaude = jest.fn().mockResolvedValue('{"success": true}');
 jest.unstable_mockModule('../services/claude.js', () => ({
