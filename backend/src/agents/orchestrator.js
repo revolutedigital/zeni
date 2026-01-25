@@ -1,4 +1,4 @@
-import { callClaude, callClaudeVision } from '../services/claude.js';
+import { callClaude, callClaudeVision, selectModel } from '../services/claude.js';
 import { logger } from '../services/logger.js';
 import {
   REGISTRAR_PROMPT,
@@ -320,34 +320,42 @@ export async function executeAgent(agent, userInput, context = {}, conversationH
       // INTEGRAÇÃO: Smart Memory - inclui contexto inteligente
       const prompt = CFO_PROMPT + contextStr + smartContextStr + stateInstruction;
       // CFO recebe histórico para manter contexto de análise
-      return await callClaude(prompt, userInput, 'claude-3-haiku-20240307', recentHistory);
+      // SELEÇÃO DINÂMICA: modelo baseado na complexidade da mensagem
+      const model = selectModel('cfo', userInput, recentHistory.length);
+      return await callClaude(prompt, userInput, model, recentHistory);
     }
 
     case 'guardian': {
       // INTEGRAÇÃO: Smart Memory - inclui contexto inteligente
       const prompt = GUARDIAN_PROMPT + contextStr + smartContextStr + stateInstruction;
       // Guardian recebe histórico para criação de orçamento em múltiplos turnos
-      return await callClaude(prompt, userInput, 'claude-3-haiku-20240307', recentHistory);
+      const model = selectModel('guardian', userInput, recentHistory.length);
+      return await callClaude(prompt, userInput, model, recentHistory);
     }
 
     case 'educator': {
       // Educador também recebe contexto para personalizar exemplos
       // INTEGRAÇÃO: Smart Memory - inclui contexto inteligente
       const prompt = EDUCATOR_PROMPT + contextStr + smartContextStr + stateInstruction;
-      return await callClaude(prompt, userInput, 'claude-3-haiku-20240307', recentHistory);
+      // SELEÇÃO DINÂMICA: modelo baseado na complexidade da pergunta
+      const model = selectModel('educator', userInput, recentHistory.length);
+      return await callClaude(prompt, userInput, model, recentHistory);
     }
 
     case 'planner': {
       // Planner recebe contexto de objetivos e dados financeiros
       // INTEGRAÇÃO: Smart Memory - inclui contexto inteligente
       const prompt = PLANNER_PROMPT + contextStr + smartContextStr + stateInstruction;
-      return await callClaude(prompt, userInput, 'claude-3-haiku-20240307', recentHistory);
+      // SELEÇÃO DINÂMICA: modelo baseado na complexidade do planejamento
+      const model = selectModel('planner', userInput, recentHistory.length);
+      return await callClaude(prompt, userInput, model, recentHistory);
     }
 
     default: {
       // Fallback para CFO
       logger.debug(`[Orchestrator] Agente desconhecido "${agent}", usando CFO`);
-      return await callClaude(CFO_PROMPT + contextStr + smartContextStr + stateInstruction, userInput, 'claude-3-haiku-20240307', recentHistory);
+      const model = selectModel('cfo', userInput, recentHistory.length);
+      return await callClaude(CFO_PROMPT + contextStr + smartContextStr + stateInstruction, userInput, model, recentHistory);
     }
   }
 }
