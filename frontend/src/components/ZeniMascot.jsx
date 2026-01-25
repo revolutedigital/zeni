@@ -23,10 +23,22 @@ const ZeniMascot = ({
   variant = 'default',
   size = 'md',
   className = '',
-  alt = 'Zeni - Sua assistente financeira',
+  alt,
   animated = false,
   animation = 'float'
 }) => {
+  // Descrições acessíveis para cada variante
+  const variantDescriptions = {
+    default: 'Zeni, sua assistente financeira',
+    icon: 'Ícone da Zeni',
+    waving: 'Zeni acenando',
+    thinking: 'Zeni pensando',
+    happy: 'Zeni feliz',
+    worried: 'Zeni preocupada'
+  };
+
+  const accessibleAlt = alt || variantDescriptions[variant] || variantDescriptions.default;
+
   const mascots = {
     default: ZeniDefault,
     icon: ZeniIcon,
@@ -65,7 +77,9 @@ const ZeniMascot = ({
   return (
     <img
       src={MascotSrc}
-      alt={alt}
+      alt={accessibleAlt}
+      role="img"
+      aria-label={accessibleAlt}
       className={`${sizeClass} ${animationClass} transition-transform duration-200 hover:scale-105 ${className}`}
       draggable="false"
     />

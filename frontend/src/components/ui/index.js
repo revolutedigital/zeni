@@ -33,3 +33,7 @@ export { SkeletonCard, SkeletonTransaction, SkeletonDashboard, PageSkeleton } fr
 // Toast
 export { default as Toast } from './Toast'
 export { ToastProvider, useToast } from './Toast'
+
+// Emoji (Acessibilidade)
+export { default as Emoji } from './Emoji'
+export { ZeniEmojis } from './Emoji'

@@ -16,7 +16,8 @@ export default {
           card: '#1E293B',
           'card-glass': 'rgba(30, 41, 59, 0.7)',
           text: '#F1F5F9',
-          muted: '#94A3B8',
+          muted: '#CBD5E1',          // Aumentado contraste (era #94A3B8)
+          'muted-dark': '#94A3B8',   // Preserva cor original para uso específico
           border: 'rgba(148, 163, 184, 0.1)',
         }
       },
