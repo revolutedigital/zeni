@@ -5,6 +5,7 @@ import Layout from './components/Layout'
 import Login from './pages/Login'
 import { ToastProvider } from './components/ui/Toast'
 import { PageSkeleton } from './components/ui/Skeleton'
+import OfflineIndicator from './components/OfflineIndicator'
 
 // Lazy loaded pages - code splitting por rota
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -14,6 +15,7 @@ const Goals = lazy(() => import('./pages/Goals'))
 const GoalDetail = lazy(() => import('./pages/GoalDetail'))
 const Chat = lazy(() => import('./pages/Chat'))
 const Onboarding = lazy(() => import('./pages/Onboarding'))
+const Subscription = lazy(() => import('./pages/Subscription'))
 
 function AppContent() {
   const { isAuthenticated, isLoading, onboardingCompleted, logout, user } = useAuth()
@@ -58,6 +60,7 @@ function AppContent() {
             <Route path="/goals" element={<Goals />} />
             <Route path="/goals/:id" element={<GoalDetail />} />
             <Route path="/chat" element={<Chat />} />
+            <Route path="/subscription" element={<Subscription />} />
             <Route path="/onboarding" element={<Navigate to="/" />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
@@ -71,6 +74,7 @@ function App() {
   return (
     <ToastProvider>
       <AuthProvider>
+        <OfflineIndicator />
         <AppContent />
       </AuthProvider>
     </ToastProvider>
