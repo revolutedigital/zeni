@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Receipt, MessageCircle, LogOut, Target, Trophy, Wallet } from 'lucide-react'
+import { LayoutDashboard, Receipt, MessageCircle, LogOut, Trophy, Wallet } from 'lucide-react'
 import ZeniMascot from './ZeniMascot'
+import NotificationBell from './NotificationBell'
 
 /**
  * Layout - Chat-Centric Navigation 2026
@@ -42,10 +43,11 @@ export default function Layout({ children, user, onLogout }) {
             </div>
             <span className="text-xl font-bold gradient-primary-text">Zeni</span>
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <span className="text-zeni-muted text-sm hidden sm:block" aria-label={`Usuário: ${user?.name}`}>
               {user?.name}
             </span>
+            <NotificationBell />
             <button
               onClick={onLogout}
               className="text-zeni-muted hover:text-red-400 transition-all duration-200 p-2 rounded-xl hover:bg-red-400/10 btn-press"

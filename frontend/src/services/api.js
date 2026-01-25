@@ -201,3 +201,28 @@ export async function getGoalsSummary() {
   })
   return res.json()
 }
+
+// Alerts/Notifications
+export async function getAlerts() {
+  const res = await fetch(`${API_URL}/alerts`, {
+    headers: getHeaders()
+  })
+  if (!res.ok) return { alerts: [] }
+  return res.json()
+}
+
+export async function markAlertAsRead(alertId) {
+  const res = await fetch(`${API_URL}/alerts/${alertId}/read`, {
+    method: 'PATCH',
+    headers: getHeaders()
+  })
+  return res.json()
+}
+
+export async function getUserStats() {
+  const res = await fetch(`${API_URL}/auth/stats`, {
+    headers: getHeaders()
+  })
+  if (!res.ok) return { streak: 0, achievements: [], xp: 0, level: 1 }
+  return res.json()
+}
