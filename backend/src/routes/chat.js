@@ -8,6 +8,7 @@ import {
   saveConversationState
 } from '../services/conversationState.js';
 import { trackEvent } from '../services/analytics.js';
+import { logger } from '../services/logger.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -234,7 +235,7 @@ router.post('/', upload.single('image'), async (req, res) => {
 
     // NOVO: Buscar estado da conversa para continuidade
     const conversationState = await getConversationState(req.userId);
-    console.log('[Chat] Estado da conversa:', JSON.stringify(conversationState));
+    logger.debug('[Chat] Estado da conversa:', JSON.stringify(conversationState));
 
     // Preparar contexto para o agente
     const agentContext = {
@@ -259,7 +260,7 @@ router.post('/', upload.single('image'), async (req, res) => {
     const newState = extractStateFromResponse(response, agent);
     newState.turnCount = (conversationState?.turnCount || 0) + 1;
     await saveConversationState(req.userId, newState);
-    console.log('[Chat] Novo estado salvo:', JSON.stringify(newState));
+    logger.debug('[Chat] Novo estado salvo:', JSON.stringify(newState));
 
     // Salvar no histórico
     await pool.query(
@@ -332,7 +333,7 @@ router.post('/', upload.single('image'), async (req, res) => {
 
         const parsed = JSON.parse(jsonStr);
         if (parsed.action === 'create_goal' && parsed.goal) {
-          console.log('[Chat] Planner retornou create_goal, criando objetivo...', parsed.goal);
+          logger.debug('[Chat] Planner retornou create_goal, criando objetivo...', parsed.goal);
 
           // Inserir objetivo no banco
           const insertResult = await pool.query(`
@@ -349,13 +350,13 @@ router.post('/', upload.single('image'), async (req, res) => {
             parsed.goal.category || 'savings'
           ]);
 
-          console.log(`[Chat] Objetivo criado com ID: ${insertResult.rows[0].id}`);
+          logger.debug(`[Chat] Objetivo criado com ID: ${insertResult.rows[0].id}`);
 
           // Substituir response pela mensagem de confirmação
           response = parsed.message || parsed.confirmation || `🎯 Objetivo "${parsed.goal.name}" criado com sucesso! Meta: R$${parsed.goal.targetAmount.toLocaleString('pt-BR')}`;
         }
       } catch (e) {
-        console.log('[Chat] Planner response não é JSON de ação:', e.message);
+        logger.debug('[Chat] Planner response não é JSON de ação:', e.message);
         // Não era JSON válido, só retorna a resposta
       }
     }
@@ -378,11 +379,11 @@ router.post('/', upload.single('image'), async (req, res) => {
           jsonStr = jsonObjectMatch[0];
         }
 
-        console.log('[Chat] CFO response (primeiros 500 chars):', response.substring(0, 500));
+        logger.debug('[Chat] CFO response (primeiros 500 chars):', response.substring(0, 500));
 
         const parsed = JSON.parse(jsonStr);
         if (parsed.action === 'create_budgets' && parsed.budgets) {
-          console.log('[Chat] CFO retornou create_budgets, criando orçamentos...', parsed.budgets);
+          logger.debug('[Chat] CFO retornou create_budgets, criando orçamentos...', parsed.budgets);
 
           let createdCount = 0;
           for (const budget of parsed.budgets) {
@@ -406,20 +407,20 @@ router.post('/', upload.single('image'), async (req, res) => {
                 context.month,
                 context.year
               ]);
-              console.log(`[Chat] Orçamento criado: ${budget.category} = R$${budget.amount}`);
+              logger.debug(`[Chat] Orçamento criado: ${budget.category} = R$${budget.amount}`);
               createdCount++;
             } else {
-              console.warn(`[Chat] Categoria não encontrada: ${budget.category}`);
+              logger.warn(`[Chat] Categoria não encontrada: ${budget.category}`);
             }
           }
 
-          console.log(`[Chat] Total de orçamentos criados: ${createdCount}`);
+          logger.debug(`[Chat] Total de orçamentos criados: ${createdCount}`);
 
           // Substituir response pelo texto de confirmação
           response = parsed.confirmation || parsed.message || `✅ ${createdCount} orçamentos criados com sucesso!`;
         }
       } catch (e) {
-        console.log('[Chat] CFO response não é JSON de ação:', e.message);
+        logger.debug('[Chat] CFO response não é JSON de ação:', e.message);
         // Não era JSON válido, só retorna a resposta
       }
     }
@@ -438,7 +439,7 @@ router.post('/', upload.single('image'), async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Erro no chat:', error);
+    logger.error('Erro no chat:', error);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
@@ -457,7 +458,7 @@ router.get('/history', async (req, res) => {
 
     res.json(result.rows.reverse());
   } catch (error) {
-    console.error('Erro ao buscar histórico:', error);
+    logger.error('Erro ao buscar histórico:', error);
     res.status(500).json({ error: 'Erro interno' });
   }
 });

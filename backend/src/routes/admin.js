@@ -9,6 +9,7 @@ import { Router } from 'express';
 import pool from '../db/connection.js';
 import { authMiddleware } from './auth.js';
 import analytics from '../services/analytics.js';
+import { logger } from '../services/logger.js';
 
 const router = Router();
 
@@ -43,7 +44,7 @@ router.get('/analytics', async (req, res) => {
     const dashboard = await analytics.getAnalyticsDashboard();
     res.json(dashboard);
   } catch (error) {
-    console.error('[Admin] Analytics error:', error);
+    logger.error('[Admin] Analytics error:', error);
     res.status(500).json({ error: 'Erro ao buscar analytics' });
   }
 });
@@ -111,7 +112,7 @@ router.get('/users', async (req, res) => {
       offset: parseInt(offset)
     });
   } catch (error) {
-    console.error('[Admin] Users error:', error);
+    logger.error('[Admin] Users error:', error);
     res.status(500).json({ error: 'Erro ao buscar usuários' });
   }
 });
@@ -153,7 +154,7 @@ router.get('/revenue', async (req, res) => {
       arpu: totalUsers > 0 ? (totalMRR / totalUsers).toFixed(2) : 0
     });
   } catch (error) {
-    console.error('[Admin] Revenue error:', error);
+    logger.error('[Admin] Revenue error:', error);
     res.status(500).json({ error: 'Erro ao buscar revenue' });
   }
 });

@@ -9,6 +9,7 @@ import { Router } from 'express';
 import pool from '../db/connection.js';
 import { authMiddleware } from './auth.js';
 import { callClaude } from '../services/claude.js';
+import { logger } from '../services/logger.js';
 
 const router = Router();
 
@@ -34,7 +35,7 @@ router.get('/status', async (req, res) => {
       monthlyIncome: user?.monthly_income ? parseFloat(user.monthly_income) : null
     });
   } catch (error) {
-    console.error('[Onboarding] Status error:', error);
+    logger.error('[Onboarding] Status error:', error);
     res.status(500).json({ error: 'Erro ao verificar status' });
   }
 });
@@ -59,7 +60,7 @@ router.post('/step/1', async (req, res) => {
 
     res.json({ success: true, nextStep: 2 });
   } catch (error) {
-    console.error('[Onboarding] Step 1 error:', error);
+    logger.error('[Onboarding] Step 1 error:', error);
     res.status(500).json({ error: 'Erro ao salvar passo 1' });
   }
 });
@@ -108,7 +109,7 @@ router.post('/step/2', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('[Onboarding] Step 2 error:', error);
+    logger.error('[Onboarding] Step 2 error:', error);
     res.status(500).json({ error: 'Erro ao salvar passo 2' });
   }
 });
@@ -135,7 +136,7 @@ router.post('/step/3', async (req, res) => {
 
     res.json({ success: true, nextStep: 4 });
   } catch (error) {
-    console.error('[Onboarding] Step 3 error:', error);
+    logger.error('[Onboarding] Step 3 error:', error);
     res.status(500).json({ error: 'Erro ao salvar passo 3' });
   }
 });
@@ -178,7 +179,7 @@ router.get('/suggested-budgets', async (req, res) => {
       totalSuggested: suggestions.reduce((sum, s) => sum + s.amount, 0)
     });
   } catch (error) {
-    console.error('[Onboarding] Suggested budgets error:', error);
+    logger.error('[Onboarding] Suggested budgets error:', error);
     res.status(500).json({ error: 'Erro ao gerar sugestões' });
   }
 });
@@ -221,7 +222,7 @@ router.post('/step/4', async (req, res) => {
 
     res.json({ success: true, nextStep: 5, budgetsCreated: budgets.length });
   } catch (error) {
-    console.error('[Onboarding] Step 4 error:', error);
+    logger.error('[Onboarding] Step 4 error:', error);
     res.status(500).json({ error: 'Erro ao salvar orçamentos' });
   }
 });
@@ -251,7 +252,7 @@ router.post('/step/5', async (req, res) => {
 
     res.json({ success: true, nextStep: 'complete' });
   } catch (error) {
-    console.error('[Onboarding] Step 5 error:', error);
+    logger.error('[Onboarding] Step 5 error:', error);
     res.status(500).json({ error: 'Erro ao salvar passo 5' });
   }
 });
@@ -275,7 +276,7 @@ router.post('/complete', async (req, res) => {
       message: 'Onboarding concluído! Bem-vindo ao Zeni!'
     });
   } catch (error) {
-    console.error('[Onboarding] Complete error:', error);
+    logger.error('[Onboarding] Complete error:', error);
     res.status(500).json({ error: 'Erro ao finalizar onboarding' });
   }
 });
@@ -296,7 +297,7 @@ router.post('/skip', async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('[Onboarding] Skip error:', error);
+    logger.error('[Onboarding] Skip error:', error);
     res.status(500).json({ error: 'Erro ao pular onboarding' });
   }
 });

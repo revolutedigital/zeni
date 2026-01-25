@@ -8,6 +8,7 @@ import { Router } from 'express';
 import pool from '../db/connection.js';
 import { authMiddleware } from './auth.js';
 import { analyzeGoalViability, refreshGoalAnalysis } from '../services/goalAnalyzer.js';
+import { logger } from '../services/logger.js';
 
 const router = Router();
 
@@ -69,7 +70,7 @@ router.get('/', async (req, res) => {
 
     res.json({ goals });
   } catch (error) {
-    console.error('[Goals] List error:', error);
+    logger.error('[Goals] List error:', error);
     res.status(500).json({ error: 'Erro ao listar objetivos' });
   }
 });
@@ -163,7 +164,7 @@ router.get('/:id', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('[Goals] Detail error:', error);
+    logger.error('[Goals] Detail error:', error);
     res.status(500).json({ error: 'Erro ao buscar objetivo' });
   }
 });
@@ -234,7 +235,7 @@ router.post('/', async (req, res) => {
         goal.action_plan = analysis;
         goal.monthly_contribution = analysis.monthlyContributionSuggested;
       } catch (analysisError) {
-        console.error('[Goals] Analysis error:', analysisError);
+        logger.error('[Goals] Analysis error:', analysisError);
         // Continua sem análise se falhar
       }
     }
@@ -258,7 +259,7 @@ router.post('/', async (req, res) => {
       analysis
     });
   } catch (error) {
-    console.error('[Goals] Create error:', error);
+    logger.error('[Goals] Create error:', error);
     res.status(500).json({ error: 'Erro ao criar objetivo' });
   }
 });
@@ -352,7 +353,7 @@ router.put('/:id', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('[Goals] Update error:', error);
+    logger.error('[Goals] Update error:', error);
     res.status(500).json({ error: 'Erro ao atualizar objetivo' });
   }
 });
@@ -376,7 +377,7 @@ router.delete('/:id', async (req, res) => {
 
     res.json({ success: true, message: 'Objetivo removido' });
   } catch (error) {
-    console.error('[Goals] Delete error:', error);
+    logger.error('[Goals] Delete error:', error);
     res.status(500).json({ error: 'Erro ao remover objetivo' });
   }
 });
@@ -456,7 +457,7 @@ router.post('/:id/contribute', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('[Goals] Contribute error:', error);
+    logger.error('[Goals] Contribute error:', error);
     res.status(500).json({ error: 'Erro ao registrar contribuição' });
   }
 });
@@ -507,7 +508,7 @@ router.delete('/:id/contributions/:contributionId', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('[Goals] Remove contribution error:', error);
+    logger.error('[Goals] Remove contribution error:', error);
     res.status(500).json({ error: 'Erro ao remover contribuição' });
   }
 });
@@ -527,7 +528,7 @@ router.post('/:id/analyze', async (req, res) => {
       analysis
     });
   } catch (error) {
-    console.error('[Goals] Analyze error:', error);
+    logger.error('[Goals] Analyze error:', error);
     res.status(500).json({ error: error.message || 'Erro ao analisar objetivo' });
   }
 });
@@ -572,7 +573,7 @@ router.get('/summary/overview', async (req, res) => {
       nextDeadline: nextDeadline.rows[0] || null
     });
   } catch (error) {
-    console.error('[Goals] Summary error:', error);
+    logger.error('[Goals] Summary error:', error);
     res.status(500).json({ error: 'Erro ao buscar resumo' });
   }
 });

@@ -13,6 +13,7 @@ import {
   getVapidPublicKey,
   notifications
 } from '../services/pushNotification.js';
+import { logger } from '../services/logger.js';
 
 const router = Router();
 
@@ -54,7 +55,7 @@ router.post('/subscribe', async (req, res) => {
       res.status(500).json({ error: 'Erro ao salvar subscription' });
     }
   } catch (error) {
-    console.error('[Notifications] Subscribe error:', error);
+    logger.error('[Notifications] Subscribe error:', error);
     res.status(500).json({ error: 'Erro ao ativar notificações' });
   }
 });
@@ -74,7 +75,7 @@ router.delete('/unsubscribe', async (req, res) => {
     await removeSubscription(req.userId, endpoint);
     res.json({ success: true, message: 'Notificações desativadas' });
   } catch (error) {
-    console.error('[Notifications] Unsubscribe error:', error);
+    logger.error('[Notifications] Unsubscribe error:', error);
     res.status(500).json({ error: 'Erro ao desativar notificações' });
   }
 });
@@ -96,7 +97,7 @@ router.post('/test', async (req, res) => {
       ...result
     });
   } catch (error) {
-    console.error('[Notifications] Test error:', error);
+    logger.error('[Notifications] Test error:', error);
     res.status(500).json({ error: 'Erro ao enviar teste' });
   }
 });

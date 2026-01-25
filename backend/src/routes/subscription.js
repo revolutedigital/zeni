@@ -14,6 +14,7 @@ import {
   getDailyChatCount,
   checkLimit
 } from '../services/subscription.js';
+import { logger } from '../services/logger.js';
 
 const router = Router();
 
@@ -40,7 +41,7 @@ router.get('/', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('[Subscription] Error:', error);
+    logger.error('[Subscription] Error:', error);
     res.status(500).json({ error: 'Erro ao buscar subscription' });
   }
 });
@@ -85,7 +86,7 @@ router.post('/upgrade', async (req, res) => {
       subscription: result
     });
   } catch (error) {
-    console.error('[Subscription] Upgrade error:', error);
+    logger.error('[Subscription] Upgrade error:', error);
     res.status(500).json({ error: 'Erro ao processar upgrade' });
   }
 });
@@ -103,7 +104,7 @@ router.post('/cancel', async (req, res) => {
       message: 'Subscription cancelada. Você voltou para o plano Free.'
     });
   } catch (error) {
-    console.error('[Subscription] Cancel error:', error);
+    logger.error('[Subscription] Cancel error:', error);
     res.status(500).json({ error: 'Erro ao cancelar subscription' });
   }
 });

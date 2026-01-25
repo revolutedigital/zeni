@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import pool from '../db/connection.js';
 import { authMiddleware } from './auth.js';
+import { logger } from '../services/logger.js';
 
 const router = Router();
 
@@ -43,7 +44,7 @@ router.get('/', async (req, res) => {
       percentUsed: Math.round((parseFloat(row.spent) / parseFloat(row.budget)) * 100)
     })));
   } catch (error) {
-    console.error('Erro ao listar orçamentos:', error);
+    logger.error('Erro ao listar orçamentos:', error);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
@@ -63,7 +64,7 @@ router.post('/', async (req, res) => {
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error('Erro ao criar orçamento:', error);
+    logger.error('Erro ao criar orçamento:', error);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
@@ -76,7 +77,7 @@ router.delete('/:id', async (req, res) => {
     await pool.query('DELETE FROM budgets WHERE id = $1 AND user_id = $2', [id, req.userId]);
     res.json({ message: 'Orçamento deletado' });
   } catch (error) {
-    console.error('Erro ao deletar orçamento:', error);
+    logger.error('Erro ao deletar orçamento:', error);
     res.status(500).json({ error: 'Erro interno' });
   }
 });

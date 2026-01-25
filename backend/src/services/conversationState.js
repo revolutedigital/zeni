@@ -6,6 +6,7 @@
  */
 
 import pool from '../db/connection.js';
+import { logger } from './logger.js';
 
 // Tipos de ações pendentes
 export const PENDING_ACTIONS = {
@@ -35,7 +36,7 @@ export async function getConversationState(userId) {
     return result.rows[0].state_data;
   } catch (error) {
     // Se a tabela não existir, retorna estado padrão
-    console.log('[ConversationState] Tabela não existe, usando estado padrão');
+    logger.debug({ error: error.message }, 'Conversation state table not found, using default');
     return getDefaultState();
   }
 }
@@ -52,7 +53,7 @@ export async function saveConversationState(userId, state) {
       DO UPDATE SET state_data = $2, updated_at = NOW()
     `, [userId, JSON.stringify(state)]);
   } catch (error) {
-    console.error('[ConversationState] Erro ao salvar estado:', error.message);
+    logger.error({ error: error.message }, 'Error saving conversation state');
     // Não propaga erro - estado é auxiliar, não crítico
   }
 }

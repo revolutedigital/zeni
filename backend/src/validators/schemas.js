@@ -22,11 +22,15 @@ export const emailSchema = z
   .toLowerCase()
   .trim();
 
-// Senha segura
+// Senha segura - requisitos fortes
 export const passwordSchema = z
   .string()
-  .min(6, 'Senha deve ter pelo menos 6 caracteres')
-  .max(100, 'Senha muito longa');
+  .min(12, 'Senha deve ter pelo menos 12 caracteres')
+  .max(100, 'Senha muito longa')
+  .regex(/[A-Z]/, 'Senha deve conter pelo menos uma letra maiúscula')
+  .regex(/[a-z]/, 'Senha deve conter pelo menos uma letra minúscula')
+  .regex(/[0-9]/, 'Senha deve conter pelo menos um número')
+  .regex(/[^a-zA-Z0-9]/, 'Senha deve conter pelo menos um caractere especial (!@#$%^&*)');
 
 // Valor monetário (positivo, até 2 casas decimais)
 export const amountSchema = z

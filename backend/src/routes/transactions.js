@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import pool from '../db/connection.js';
 import { authMiddleware } from './auth.js';
+import { logger } from '../services/logger.js';
 
 const router = Router();
 
@@ -49,7 +50,7 @@ router.get('/', async (req, res) => {
     const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (error) {
-    console.error('Erro ao listar transações:', error);
+    logger.error('Erro ao listar transações:', error);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
@@ -103,7 +104,7 @@ router.get('/summary', async (req, res) => {
       byCategory: byCategory.rows
     });
   } catch (error) {
-    console.error('Erro ao gerar resumo:', error);
+    logger.error('Erro ao gerar resumo:', error);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
@@ -121,7 +122,7 @@ router.post('/', async (req, res) => {
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error('Erro ao criar transação:', error);
+    logger.error('Erro ao criar transação:', error);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
@@ -151,7 +152,7 @@ router.put('/:id', async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Erro ao atualizar transação:', error);
+    logger.error('Erro ao atualizar transação:', error);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
@@ -175,7 +176,7 @@ router.patch('/:id/paid', async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Erro ao atualizar status:', error);
+    logger.error('Erro ao atualizar status:', error);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
@@ -196,7 +197,7 @@ router.delete('/:id', async (req, res) => {
 
     res.json({ message: 'Transação deletada' });
   } catch (error) {
-    console.error('Erro ao deletar transação:', error);
+    logger.error('Erro ao deletar transação:', error);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
@@ -284,7 +285,7 @@ router.get('/debug/yearly/:year', async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('Erro no debug:', error);
+    logger.error('Erro no debug:', error);
     res.status(500).json({ error: 'Erro interno' });
   }
 });

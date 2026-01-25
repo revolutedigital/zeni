@@ -12,6 +12,7 @@ import {
   checkAndScheduleBudgetAlerts,
   checkAndScheduleBillReminders
 } from '../services/agenticActions.js';
+import { logger } from '../services/logger.js';
 
 const router = Router();
 
@@ -32,7 +33,7 @@ router.get('/', async (req, res) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error('[Alerts] List error:', error);
+    logger.error('[Alerts] List error:', error);
     res.status(500).json({ error: 'Erro ao listar alertas' });
   }
 });
@@ -57,7 +58,7 @@ router.post('/', async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('[Alerts] Create error:', error);
+    logger.error('[Alerts] Create error:', error);
     res.status(500).json({ error: 'Erro ao criar alerta' });
   }
 });
@@ -76,7 +77,7 @@ router.delete('/:id', async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('[Alerts] Delete error:', error);
+    logger.error('[Alerts] Delete error:', error);
     res.status(500).json({ error: 'Erro ao remover alerta' });
   }
 });
@@ -90,7 +91,7 @@ router.post('/check-budgets', async (req, res) => {
     await checkAndScheduleBudgetAlerts(req.userId);
     res.json({ success: true, message: 'Verificação de orçamentos executada' });
   } catch (error) {
-    console.error('[Alerts] Check budgets error:', error);
+    logger.error('[Alerts] Check budgets error:', error);
     res.status(500).json({ error: 'Erro ao verificar orçamentos' });
   }
 });
@@ -104,7 +105,7 @@ router.post('/check-bills', async (req, res) => {
     await checkAndScheduleBillReminders(req.userId);
     res.json({ success: true, message: 'Verificação de contas executada' });
   } catch (error) {
-    console.error('[Alerts] Check bills error:', error);
+    logger.error('[Alerts] Check bills error:', error);
     res.status(500).json({ error: 'Erro ao verificar contas' });
   }
 });
@@ -125,7 +126,7 @@ router.get('/pending-actions', async (req, res) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error('[Alerts] Pending actions error:', error);
+    logger.error('[Alerts] Pending actions error:', error);
     res.status(500).json({ error: 'Erro ao listar ações' });
   }
 });
@@ -154,7 +155,7 @@ router.post('/schedule-reminder', async (req, res) => {
       actionId
     });
   } catch (error) {
-    console.error('[Alerts] Schedule reminder error:', error);
+    logger.error('[Alerts] Schedule reminder error:', error);
     res.status(500).json({ error: 'Erro ao agendar lembrete' });
   }
 });

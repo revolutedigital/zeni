@@ -1,4 +1,5 @@
 import { callClaude, callClaudeVision } from '../services/claude.js';
+import { logger } from '../services/logger.js';
 import {
   REGISTRAR_PROMPT,
   REGISTRAR_VISION_PROMPT,
@@ -180,14 +181,14 @@ export function routeToAgent(userInput, context = {}, conversationHistory = [], 
   const input = userInput.toLowerCase().trim();
 
   // Debug log
-  console.log(`[Orchestrator] Input: "${input.substring(0, 50)}..."`);
+  logger.debug(`[Orchestrator] Input: "${input.substring(0, 50)}..."`);
 
   // Analisar contexto da conversa anterior
   const convContext = detectConversationContext(conversationHistory);
 
   // 1. Se tem imagem, vai pro registrador com vision
   if (context.hasImage) {
-    console.log('[Orchestrator] → Agente: registrar_vision (imagem detectada)');
+    logger.debug('[Orchestrator] → Agente: registrar_vision (imagem detectada)');
     return 'registrar_vision';
   }
 
@@ -195,7 +196,7 @@ export function routeToAgent(userInput, context = {}, conversationHistory = [], 
   if (conversationState?.pendingAction) {
     const resolved = resolveShortResponse(input, conversationState);
     if (resolved) {
-      console.log(`[Orchestrator] → Continuação de ação: ${resolved.action}`);
+      logger.debug(`[Orchestrator] → Continuação de ação: ${resolved.action}`);
       // Criar orçamento vai pro CFO que sabe criar
       if (resolved.action === PENDING_ACTIONS.CREATE_BUDGET) {
         return 'cfo';
@@ -213,12 +214,12 @@ export function routeToAgent(userInput, context = {}, conversationHistory = [], 
   if (isShortResponse && convContext?.wasAsking) {
     // Se estava falando de orçamento, continua com CFO (que cria orçamento)
     if (convContext.isBudgetContext) {
-      console.log('[Orchestrator] → Agente: cfo (continuação - orçamento)');
+      logger.debug('[Orchestrator] → Agente: cfo (continuação - orçamento)');
       return 'cfo';
     }
     // Se estava fazendo análise, continua com CFO
     if (convContext.isAnalysisContext) {
-      console.log('[Orchestrator] → Agente: cfo (continuação - análise)');
+      logger.debug('[Orchestrator] → Agente: cfo (continuação - análise)');
       return 'cfo';
     }
   }
@@ -226,43 +227,43 @@ export function routeToAgent(userInput, context = {}, conversationHistory = [], 
   // 4. Detectar pedido de recomendação/sugestão após análise
   if (/o que.*(indica|recomenda|sugere|aconselha)|me (ajuda|ajude)|como (faço|fazer)/i.test(input)) {
     if (convContext?.isAnalysisContext || convContext?.isBudgetContext) {
-      console.log('[Orchestrator] → Agente: cfo (pedido de recomendação)');
+      logger.debug('[Orchestrator] → Agente: cfo (pedido de recomendação)');
       return 'cfo';
     }
   }
 
   // 5. Se é sobre objetivos/metas financeiras
   if (hasPlannerIntent(input)) {
-    console.log('[Orchestrator] → Agente: planner (objetivos/metas)');
+    logger.debug('[Orchestrator] → Agente: planner (objetivos/metas)');
     return 'planner';
   }
 
   // 6. PRIORIDADE: Se é análise financeira (CFO)
   if (hasCFOIntent(input)) {
-    console.log('[Orchestrator] → Agente: cfo (análise financeira)');
+    logger.debug('[Orchestrator] → Agente: cfo (análise financeira)');
     return 'cfo';
   }
 
   // 7. Se precisa de validação/consulta de gasto
   if (hasGuardianIntent(input, context)) {
-    console.log('[Orchestrator] → Agente: guardian (consulta de gasto)');
+    logger.debug('[Orchestrator] → Agente: guardian (consulta de gasto)');
     return 'guardian';
   }
 
   // 8. Se é pergunta conceitual/educacional
   if (hasEducationalIntent(input)) {
-    console.log('[Orchestrator] → Agente: educator (pergunta educacional)');
+    logger.debug('[Orchestrator] → Agente: educator (pergunta educacional)');
     return 'educator';
   }
 
   // 9. Se parece uma transação (registro de gasto/receita)
   if (hasTransactionIntent(input)) {
-    console.log('[Orchestrator] → Agente: registrar (transação detectada)');
+    logger.debug('[Orchestrator] → Agente: registrar (transação detectada)');
     return 'registrar';
   }
 
   // 10. Default: CFO para perguntas gerais sobre finanças
-  console.log('[Orchestrator] → Agente: cfo (default)');
+  logger.debug('[Orchestrator] → Agente: cfo (default)');
   return 'cfo';
 }
 
@@ -289,9 +290,9 @@ export async function executeAgent(agent, userInput, context = {}, conversationH
   const resolvedIntent = conversationState ? resolveShortResponse(userInput, conversationState) : null;
   const stateInstruction = getStateInstruction(conversationState, userInput, resolvedIntent);
 
-  console.log(`[Orchestrator] Executando agente: ${agent} (com ${recentHistory.length} msgs de histórico)`);
+  logger.debug(`[Orchestrator] Executando agente: ${agent} (com ${recentHistory.length} msgs de histórico)`);
   if (stateInstruction) {
-    console.log(`[Orchestrator] Instrução de estado adicionada: ${resolvedIntent?.action || 'contexto'}`);
+    logger.debug(`[Orchestrator] Instrução de estado adicionada: ${resolvedIntent?.action || 'contexto'}`);
   }
 
   switch (agent) {
@@ -338,7 +339,7 @@ export async function executeAgent(agent, userInput, context = {}, conversationH
 
     default: {
       // Fallback para CFO
-      console.log(`[Orchestrator] Agente desconhecido "${agent}", usando CFO`);
+      logger.debug(`[Orchestrator] Agente desconhecido "${agent}", usando CFO`);
       return await callClaude(CFO_PROMPT + contextStr + stateInstruction, userInput, 'claude-3-haiku-20240307', recentHistory);
     }
   }

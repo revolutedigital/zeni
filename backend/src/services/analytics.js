@@ -10,6 +10,7 @@
  */
 
 import pool from '../db/connection.js';
+import { logger } from './logger.js';
 
 /**
  * Registra evento de analytics
@@ -22,7 +23,7 @@ export async function trackEvent(userId, eventType, metadata = {}) {
     `, [userId, eventType, JSON.stringify(metadata)]);
   } catch (error) {
     // Falha silenciosa - analytics não deve quebrar a app
-    console.error('[Analytics] Error tracking event:', error.message);
+    logger.error('[Analytics] Error tracking event:', error.message);
   }
 }
 

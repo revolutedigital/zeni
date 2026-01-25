@@ -100,6 +100,18 @@ const chatLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Rate limit por usuário autenticado: 100 requests por minuto
+// Complementa o rate limit por IP para evitar bypass via VPN
+const userRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  message: { error: 'Limite de requisições atingido. Aguarde 1 minuto.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.userId || req.ip || 'unknown',
+  skip: (req) => !req.userId, // Só aplica para usuários autenticados
+});
+
 // ===========================================
 // MIDDLEWARES GERAIS
 // ===========================================
@@ -131,16 +143,16 @@ app.use('/api/auth', authLimiter, authRouter);
 // Chat com rate limit específico (API Claude é cara)
 app.use('/api/chat', chatLimiter, chatRouter);
 
-// Outras rotas
-app.use('/api/transactions', transactionsRouter);
-app.use('/api/categories', categoriesRouter);
-app.use('/api/budgets', budgetsRouter);
-app.use('/api/admin', adminRouter);
-app.use('/api/subscription', subscriptionRouter);
-app.use('/api/notifications', notificationsRouter);
-app.use('/api/alerts', alertsRouter);
-app.use('/api/onboarding', onboardingRouter);
-app.use('/api/goals', goalsRouter);
+// Outras rotas (com rate limit por usuário para rotas autenticadas)
+app.use('/api/transactions', userRateLimiter, transactionsRouter);
+app.use('/api/categories', userRateLimiter, categoriesRouter);
+app.use('/api/budgets', userRateLimiter, budgetsRouter);
+app.use('/api/admin', userRateLimiter, adminRouter);
+app.use('/api/subscription', userRateLimiter, subscriptionRouter);
+app.use('/api/notifications', userRateLimiter, notificationsRouter);
+app.use('/api/alerts', userRateLimiter, alertsRouter);
+app.use('/api/onboarding', userRateLimiter, onboardingRouter);
+app.use('/api/goals', userRateLimiter, goalsRouter);
 
 // ===========================================
 // HEALTH CHECK & METRICS
@@ -239,7 +251,7 @@ app.listen(PORT, () => {
     cors: allowedOrigins,
   }, `Zeni API started`);
 
-  console.log(`🚀 Zeni API rodando em http://localhost:${PORT}`);
+  logger.info({ url: `http://localhost:${PORT}` }, 'Zeni API started successfully');
 
   // Iniciar job de ações agenticas (a cada 5 minutos)
   if (isProduction) {
@@ -256,7 +268,7 @@ app.listen(PORT, () => {
       });
     }, 30 * 1000);
 
-    console.log('🤖 Agentic actions job scheduled');
+    logger.info('Agentic actions job scheduled');
   }
 });
 

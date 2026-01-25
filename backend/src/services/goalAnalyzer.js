@@ -6,6 +6,7 @@
 
 import { callClaude } from './claude.js';
 import pool from '../db/connection.js';
+import { logger } from './logger.js';
 
 /**
  * Analisa a viabilidade de um objetivo financeiro
@@ -33,7 +34,7 @@ export async function analyzeGoalViability(userId, goalData) {
     const parsed = parseAnalysisResponse(response);
     return parsed;
   } catch (error) {
-    console.error('[GoalAnalyzer] Parse error:', error);
+    logger.error('[GoalAnalyzer] Parse error:', error);
     return {
       viabilityScore: 50,
       analysis: response,

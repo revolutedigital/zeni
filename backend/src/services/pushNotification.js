@@ -9,24 +9,37 @@
 
 import webpush from 'web-push';
 import pool from '../db/connection.js';
+import { logger } from './logger.js';
 
-// Configurar VAPID keys (gerar novas em produção)
-const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U';
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || 'UUxI4O8-FbRouAevSmBQ6o18hgE4nSG3qwvJTfKc-ls';
+// VAPID keys - OBRIGATÓRIO definir via variáveis de ambiente
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
 
-// Configurar webpush
+// Flag para indicar se push notifications estão habilitadas
+let pushEnabled = false;
+
+// Configurar webpush apenas se as keys estiverem definidas
 if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(
     'mailto:contato@zeni.app',
     VAPID_PUBLIC_KEY,
     VAPID_PRIVATE_KEY
   );
+  pushEnabled = true;
+  logger.info('Push notifications enabled');
+} else {
+  logger.warn('VAPID keys not configured - push notifications disabled. Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.');
 }
 
 /**
  * Salva subscription de push do usuário
  */
 export async function saveSubscription(userId, subscription) {
+  if (!pushEnabled) {
+    logger.debug({ userId }, 'Push disabled - skipping subscription save');
+    return false;
+  }
+
   try {
     await pool.query(`
       INSERT INTO push_subscriptions (user_id, endpoint, keys)
@@ -37,7 +50,7 @@ export async function saveSubscription(userId, subscription) {
 
     return true;
   } catch (error) {
-    console.error('[Push] Error saving subscription:', error);
+    logger.error({ error, userId }, 'Error saving push subscription');
     return false;
   }
 }
@@ -54,7 +67,7 @@ export async function removeSubscription(userId, endpoint) {
 
     return true;
   } catch (error) {
-    console.error('[Push] Error removing subscription:', error);
+    logger.error({ error, userId, endpoint }, 'Error removing push subscription');
     return false;
   }
 }
@@ -77,10 +90,15 @@ export async function getUserSubscriptions(userId) {
  * Envia notificação para um usuário
  */
 export async function sendNotification(userId, notification) {
+  if (!pushEnabled) {
+    logger.debug({ userId }, 'Push disabled - skipping notification');
+    return { sent: 0, failed: 0 };
+  }
+
   const subscriptions = await getUserSubscriptions(userId);
 
   if (subscriptions.length === 0) {
-    console.log('[Push] No subscriptions for user:', userId);
+    logger.debug({ userId }, 'No push subscriptions for user');
     return { sent: 0, failed: 0 };
   }
 
@@ -103,7 +121,7 @@ export async function sendNotification(userId, notification) {
       await webpush.sendNotification(subscription, payload);
       sent++;
     } catch (error) {
-      console.error('[Push] Send error:', error.statusCode);
+      logger.error({ error: error.statusCode, userId }, 'Push send error');
       failed++;
 
       // Se subscription inválida, remover
@@ -186,7 +204,14 @@ export const notifications = {
  * Retorna a public key para o frontend
  */
 export function getVapidPublicKey() {
-  return VAPID_PUBLIC_KEY;
+  return pushEnabled ? VAPID_PUBLIC_KEY : null;
+}
+
+/**
+ * Verifica se push notifications estão habilitadas
+ */
+export function isPushEnabled() {
+  return pushEnabled;
 }
 
 export default {
@@ -196,5 +221,6 @@ export default {
   sendNotification,
   sendBulkNotification,
   notifications,
-  getVapidPublicKey
+  getVapidPublicKey,
+  isPushEnabled
 };

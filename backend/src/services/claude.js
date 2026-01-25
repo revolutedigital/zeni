@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
+import { logger } from './logger.js';
 
 dotenv.config();
 
@@ -30,7 +31,7 @@ export async function callClaude(systemPrompt, userMessage, model = 'claude-3-ha
 
     return response.content[0].text;
   } catch (error) {
-    console.error('Erro ao chamar Claude:', error);
+    logger.error({ error, model }, 'Error calling Claude API');
     throw error;
   }
 }
@@ -65,7 +66,7 @@ export async function callClaudeVision(systemPrompt, imageBase64, mimeType = 'im
 
     return response.content[0].text;
   } catch (error) {
-    console.error('Erro ao chamar Claude Vision:', error);
+    logger.error({ error }, 'Error calling Claude Vision API');
     throw error;
   }
 }

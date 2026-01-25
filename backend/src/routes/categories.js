@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import pool from '../db/connection.js';
+import { logger } from '../services/logger.js';
 
 const router = Router();
 
@@ -21,7 +22,7 @@ router.get('/', async (req, res) => {
     const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (error) {
-    console.error('Erro ao listar categorias:', error);
+    logger.error('Erro ao listar categorias:', error);
     res.status(500).json({ error: 'Erro interno' });
   }
 });

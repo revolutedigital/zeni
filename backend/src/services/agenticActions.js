@@ -11,6 +11,7 @@
 import pool from '../db/connection.js';
 import { sendNotification, notifications } from './pushNotification.js';
 import { callClaude } from './claude.js';
+import { logger } from './logger.js';
 
 /**
  * Agenda uma ação para execução futura
@@ -72,7 +73,7 @@ export async function failAction(actionId, error) {
  * Executa uma ação
  */
 export async function executeAction(action) {
-  console.log(`[Agentic] Executing action ${action.action_type} for user ${action.user_id}`);
+  logger.debug(`[Agentic] Executing action ${action.action_type} for user ${action.user_id}`);
 
   try {
     switch (action.action_type) {
@@ -93,12 +94,12 @@ export async function executeAction(action) {
         break;
 
       default:
-        console.warn(`[Agentic] Unknown action type: ${action.action_type}`);
+        logger.warn(`[Agentic] Unknown action type: ${action.action_type}`);
     }
 
     await completeAction(action.id, { success: true });
   } catch (error) {
-    console.error(`[Agentic] Action ${action.id} failed:`, error);
+    logger.error(`[Agentic] Action ${action.id} failed:`, error);
     await failAction(action.id, error);
   }
 }
@@ -330,7 +331,7 @@ export async function scheduleWeeklyInsights() {
 export async function processAgenticActions() {
   const actions = await getPendingActions();
 
-  console.log(`[Agentic] Processing ${actions.length} pending actions`);
+  logger.debug(`[Agentic] Processing ${actions.length} pending actions`);
 
   for (const action of actions) {
     await executeAction(action);
@@ -343,7 +344,7 @@ export async function processAgenticActions() {
  * Job de verificação periódica (chamar via cron ou setInterval)
  */
 export async function runPeriodicChecks() {
-  console.log('[Agentic] Running periodic checks...');
+  logger.debug('[Agentic] Running periodic checks...');
 
   // Buscar todos os usuários ativos
   const users = await pool.query(`
@@ -359,7 +360,7 @@ export async function runPeriodicChecks() {
   // Processar ações pendentes
   await processAgenticActions();
 
-  console.log('[Agentic] Periodic checks complete');
+  logger.debug('[Agentic] Periodic checks complete');
 }
 
 // Helper
