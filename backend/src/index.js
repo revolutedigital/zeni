@@ -18,6 +18,7 @@ import onboardingRouter from './routes/onboarding.js';
 import goalsRouter from './routes/goals.js';
 import { logger, httpLogger } from './services/logger.js';
 import { runPeriodicChecks } from './services/agenticActions.js';
+import { ApiError } from './errors/ApiError.js';
 
 dotenv.config();
 
@@ -193,7 +194,21 @@ app.use((req, res) => {
 });
 
 // Error handler global
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
+  // ApiError - erros operacionais conhecidos
+  if (err instanceof ApiError && err.isOperational) {
+    logger.warn({
+      code: err.code,
+      statusCode: err.statusCode,
+      message: err.message,
+      path: req.path,
+      method: req.method,
+      requestId: req.id,
+    }, 'API Error');
+
+    return res.status(err.statusCode).json(err.toJSON());
+  }
+
   // Log do erro
   logger.error({
     err,
@@ -219,6 +234,16 @@ app.use((err, req, res, next) => {
   // JWT error
   if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
     return res.status(401).json({ error: 'Token inválido ou expirado' });
+  }
+
+  // PostgreSQL errors
+  if (err.code && err.code.startsWith('23')) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'Registro já existe' });
+    }
+    if (err.code === '23503') {
+      return res.status(400).json({ error: 'Referência inválida' });
+    }
   }
 
   // Erro genérico
