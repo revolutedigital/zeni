@@ -19,6 +19,7 @@ import goalsRouter from './routes/goals.js';
 import { logger, httpLogger } from './services/logger.js';
 import { runPeriodicChecks } from './services/agenticActions.js';
 import { ApiError } from './errors/ApiError.js';
+import pool from './db/connection.js';
 
 dotenv.config();
 
@@ -159,14 +160,32 @@ app.use('/api/goals', userRateLimiter, goalsRouter);
 // HEALTH CHECK & METRICS
 // ===========================================
 
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
+app.get('/api/health', async (req, res) => {
+  const checks = {
+    status: 'healthy',
     name: 'Zeni API',
     version: process.env.npm_package_version || '1.0.0',
     environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString(),
-  });
+    uptime: Math.round(process.uptime()),
+    database: 'unknown',
+    memory: {
+      heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+    },
+  };
+
+  try {
+    const result = await pool.query('SELECT 1 as ok');
+    checks.database = result.rows[0]?.ok === 1 ? 'connected' : 'error';
+  } catch (error) {
+    checks.database = 'disconnected';
+    checks.status = 'unhealthy';
+    logger.error({ err: error }, 'Database health check failed');
+  }
+
+  const statusCode = checks.status === 'healthy' ? 200 : 503;
+  res.status(statusCode).json(checks);
 });
 
 // Endpoint de métricas básicas (para monitoring)
