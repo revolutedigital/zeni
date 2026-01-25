@@ -8,9 +8,11 @@ import { jest } from '@jest/globals';
 
 // Mock do Claude API antes de importar
 const mockCallClaude = jest.fn().mockResolvedValue('{"success": true}');
+const mockSelectModel = jest.fn().mockReturnValue('claude-3-haiku-20240307');
 jest.unstable_mockModule('../services/claude.js', () => ({
   callClaude: mockCallClaude,
   callClaudeVision: jest.fn(),
+  selectModel: mockSelectModel,
 }));
 
 // Mock do conversationState

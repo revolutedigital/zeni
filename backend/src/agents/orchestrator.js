@@ -55,7 +55,7 @@ const EDUCATIONAL_PATTERNS = [
 // Padrões para consulta ao guardião
 const GUARDIAN_PATTERNS = [
   /\bposso (gastar|comprar|pagar)\b/i,
-  /\bda pra (gastar|comprar|pagar)\b/i,
+  /\bd[aá] pra (gastar|comprar|pagar)\b/i,
   /\btenho (dinheiro|grana|verba) pra\b/i,
   /\bcabe no or[çc]amento\b/i,
   /\bvou (gastar|comprar|pagar)\b/i,
