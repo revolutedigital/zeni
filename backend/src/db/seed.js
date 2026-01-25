@@ -24,8 +24,8 @@ async function seed() {
   try {
     console.log('🌱 Iniciando seed...');
 
-    // Criar usuário Igor
-    const passwordHash = await bcrypt.hash('123456', 10);
+    // Criar usuário Igor (senha forte: 12+ chars, maiúscula, minúscula, número, especial)
+    const passwordHash = await bcrypt.hash('SenhaForte123!', 10);
 
     const userResult = await client.query(`
       INSERT INTO users (name, email, password_hash)
@@ -94,7 +94,7 @@ async function seed() {
     }
 
     console.log('✅ Transações de exemplo criadas');
-    console.log('\n📝 Login: igor@zeni.app / 123456');
+    console.log('\n📝 Login: igor@zeni.app / SenhaForte123!');
     console.log('✅ Seed concluído!');
 
   } catch (error) {
