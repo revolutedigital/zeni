@@ -28,7 +28,7 @@ export { ModalFooter, ConfirmModal } from './Modal'
 
 // Skeleton
 export { default as Skeleton } from './Skeleton'
-export { SkeletonCard, SkeletonTransaction, SkeletonDashboard } from './Skeleton'
+export { SkeletonCard, SkeletonTransaction, SkeletonDashboard, PageSkeleton } from './Skeleton'
 
 // Toast
 export { default as Toast } from './Toast'

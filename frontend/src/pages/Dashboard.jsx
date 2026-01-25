@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, Wallet, ArrowRight, Target, AlertTriangle, ChevronLeft, ChevronRight, Calendar, Trophy } from 'lucide-react'
+import { useState, useEffect, useMemo, useCallback, memo } from 'react'
+import { TrendingUp, TrendingDown, Wallet, ArrowRight, Target, AlertTriangle, ChevronLeft, ChevronRight, Trophy } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { getSummary, getTransactions, getBudgets, getGoalsSummary, getGoals } from '../services/api'
 
@@ -10,7 +10,8 @@ function formatMoney(value) {
   }).format(value)
 }
 
-function ProgressBar({ percent, color }) {
+// Memoized ProgressBar para evitar re-renders
+const ProgressBar = memo(function ProgressBar({ percent, color }) {
   const clampedPercent = Math.min(percent, 100)
   const isOver = percent > 100
 
@@ -25,7 +26,68 @@ function ProgressBar({ percent, color }) {
       />
     </div>
   )
-}
+})
+
+// Memoized components para listas
+const BudgetItem = memo(function BudgetItem({ budget }) {
+  return (
+    <div>
+      <div className="flex justify-between text-sm mb-1">
+        <span className="flex items-center gap-2">
+          <div
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: budget.category_color }}
+          />
+          {budget.category_name}
+        </span>
+        <span className={budget.percentUsed > 100 ? 'text-red-400' : ''}>
+          {formatMoney(budget.spent)} / {formatMoney(budget.budget)}
+        </span>
+      </div>
+      <ProgressBar percent={budget.percentUsed} color={budget.category_color} />
+    </div>
+  )
+})
+
+const TransactionItem = memo(function TransactionItem({ transaction }) {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div
+          className="w-2 h-2 rounded-full"
+          style={{ backgroundColor: transaction.category_color || '#9CA3AF' }}
+        />
+        <div>
+          <p className="text-sm">{transaction.description || transaction.category_name}</p>
+          <p className="text-xs text-zeni-muted">
+            {new Date(transaction.date).toLocaleDateString('pt-BR')}
+          </p>
+        </div>
+      </div>
+      <span className={`money-sm ${transaction.type === 'income' ? 'text-emerald-500' : 'text-red-400'}`}>
+        {transaction.type === 'income' ? '+' : '-'}{formatMoney(transaction.amount)}
+      </span>
+    </div>
+  )
+})
+
+const GoalItem = memo(function GoalItem({ goal }) {
+  return (
+    <Link
+      to={`/goals/${goal.id}`}
+      className="block p-3 bg-zeni-dark rounded-lg hover:bg-slate-700 transition-colors"
+    >
+      <div className="flex justify-between items-center mb-2">
+        <span className="font-medium">{goal.name}</span>
+        <span className="text-sm text-zeni-muted">{goal.progressPercent}%</span>
+      </div>
+      <ProgressBar percent={goal.progressPercent} color="#10B981" />
+      <p className="text-xs text-zeni-muted mt-1">
+        {formatMoney(goal.currentAmount)} de {formatMoney(goal.targetAmount)}
+      </p>
+    </Link>
+  )
+})
 
 const MONTH_NAMES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -43,10 +105,21 @@ export default function Dashboard() {
   const [activeGoals, setActiveGoals] = useState([])
   const [loading, setLoading] = useState(true)
 
-  const isCurrentMonth = month === now.getMonth() + 1 && year === now.getFullYear()
-  const daysInMonth = new Date(year, month, 0).getDate()
-  const dayOfMonth = isCurrentMonth ? now.getDate() : daysInMonth
-  const monthProgress = Math.round((dayOfMonth / daysInMonth) * 100)
+  // Memoized computed values
+  const isCurrentMonth = useMemo(() =>
+    month === now.getMonth() + 1 && year === now.getFullYear(),
+    [month, year, now]
+  )
+
+  const { daysInMonth, dayOfMonth, monthProgress } = useMemo(() => {
+    const days = new Date(year, month, 0).getDate()
+    const day = isCurrentMonth ? now.getDate() : days
+    return {
+      daysInMonth: days,
+      dayOfMonth: day,
+      monthProgress: Math.round((day / days) * 100)
+    }
+  }, [year, month, isCurrentMonth, now])
 
   useEffect(() => {
     async function load() {
@@ -73,36 +146,38 @@ export default function Dashboard() {
     load()
   }, [month, year])
 
-  function prevMonth() {
-    if (month === 1) {
-      setMonth(12)
-      setYear(year - 1)
-    } else {
-      setMonth(month - 1)
-    }
-  }
+  // Memoized callbacks para navegação
+  const prevMonth = useCallback(() => {
+    setMonth(prev => {
+      if (prev === 1) {
+        setYear(y => y - 1)
+        return 12
+      }
+      return prev - 1
+    })
+  }, [])
 
-  function nextMonth() {
-    if (month === 12) {
-      setMonth(1)
-      setYear(year + 1)
-    } else {
-      setMonth(month + 1)
-    }
-  }
+  const nextMonth = useCallback(() => {
+    setMonth(prev => {
+      if (prev === 12) {
+        setYear(y => y + 1)
+        return 1
+      }
+      return prev + 1
+    })
+  }, [])
 
-  function goToCurrentMonth() {
+  const goToCurrentMonth = useCallback(() => {
     setMonth(now.getMonth() + 1)
     setYear(now.getFullYear())
-  }
+  }, [now])
 
-  // Calcular orçamentos estourados
-  const overBudget = budgets.filter(b => b.percentUsed > 100)
-  const nearLimit = budgets.filter(b => b.percentUsed >= 80 && b.percentUsed <= 100)
-
-  // Total orçado vs gasto
-  const totalBudget = budgets.reduce((sum, b) => sum + b.budget, 0)
-  const totalSpent = budgets.reduce((sum, b) => sum + b.spent, 0)
+  // Memoized budget calculations
+  const { overBudget, totalBudget, totalSpent } = useMemo(() => ({
+    overBudget: budgets.filter(b => b.percentUsed > 100),
+    totalBudget: budgets.reduce((sum, b) => sum + b.budget, 0),
+    totalSpent: budgets.reduce((sum, b) => sum + b.spent, 0)
+  }), [budgets])
 
   return (
     <div className="space-y-6">
@@ -237,21 +312,7 @@ export default function Dashboard() {
               {/* Top categorias por orçamento */}
               <div className="space-y-3">
                 {budgets.slice(0, 5).map((b) => (
-                  <div key={b.category_id}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="flex items-center gap-2">
-                        <div
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: b.category_color }}
-                        />
-                        {b.category_name}
-                      </span>
-                      <span className={b.percentUsed > 100 ? 'text-red-400' : ''}>
-                        {formatMoney(b.spent)} / {formatMoney(b.budget)}
-                      </span>
-                    </div>
-                    <ProgressBar percent={b.percentUsed} color={b.category_color} />
-                  </div>
+                  <BudgetItem key={b.category_id} budget={b} />
                 ))}
               </div>
 
@@ -304,23 +365,7 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-3">
                 {recent.map((t) => (
-                  <div key={t.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: t.category_color || '#9CA3AF' }}
-                      />
-                      <div>
-                        <p className="text-sm">{t.description || t.category_name}</p>
-                        <p className="text-xs text-zeni-muted">
-                          {new Date(t.date).toLocaleDateString('pt-BR')}
-                        </p>
-                      </div>
-                    </div>
-                    <span className={`money-sm ${t.type === 'income' ? 'text-emerald-500' : 'text-red-400'}`}>
-                      {t.type === 'income' ? '+' : '-'}{formatMoney(t.amount)}
-                    </span>
-                  </div>
+                  <TransactionItem key={t.id} transaction={t} />
                 ))}
               </div>
             )}
@@ -361,20 +406,7 @@ export default function Dashboard() {
 
               <div className="space-y-3">
                 {activeGoals.map((goal) => (
-                  <Link
-                    key={goal.id}
-                    to={`/goals/${goal.id}`}
-                    className="block p-3 bg-zeni-dark rounded-lg hover:bg-slate-700 transition-colors"
-                  >
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium">{goal.name}</span>
-                      <span className="text-sm text-zeni-muted">{goal.progressPercent}%</span>
-                    </div>
-                    <ProgressBar percent={goal.progressPercent} color="#10B981" />
-                    <p className="text-xs text-zeni-muted mt-1">
-                      {formatMoney(goal.currentAmount)} de {formatMoney(goal.targetAmount)}
-                    </p>
-                  </Link>
+                  <GoalItem key={goal.id} goal={goal} />
                 ))}
               </div>
             </div>

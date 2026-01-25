@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { login, register } from '../services/api'
+import { useAuth } from '../contexts/AuthContext'
 
-export default function Login({ onLogin }) {
+export default function Login() {
+  const { login: authLogin } = useAuth()
   const [isRegister, setIsRegister] = useState(false)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -21,7 +23,7 @@ export default function Login({ onLogin }) {
       } else {
         result = await login(email, password)
       }
-      onLogin(result.user, result.token)
+      authLogin(result.user, result.token)
     } catch (err) {
       setError(err.message)
     } finally {
