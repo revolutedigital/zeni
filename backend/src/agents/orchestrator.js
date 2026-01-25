@@ -280,6 +280,9 @@ export async function executeAgent(agent, userInput, context = {}, conversationH
     ? `\n\nContexto financeiro atual:\n${JSON.stringify(context.data, null, 2)}`
     : '';
 
+  // INTEGRAÇÃO: Smart Memory - adiciona contexto inteligente (fatos do usuário + resumo)
+  const smartContextStr = context.smartContextStr || '';
+
   // Informações de data para o registrador
   const dateContext = `\n\nData de hoje: ${today}\nData de ontem: ${yesterday}`;
 
@@ -314,33 +317,37 @@ export async function executeAgent(agent, userInput, context = {}, conversationH
 
     case 'cfo': {
       // CFO recebe instrução de estado para saber como prosseguir
-      const prompt = CFO_PROMPT + contextStr + stateInstruction;
+      // INTEGRAÇÃO: Smart Memory - inclui contexto inteligente
+      const prompt = CFO_PROMPT + contextStr + smartContextStr + stateInstruction;
       // CFO recebe histórico para manter contexto de análise
       return await callClaude(prompt, userInput, 'claude-3-haiku-20240307', recentHistory);
     }
 
     case 'guardian': {
-      const prompt = GUARDIAN_PROMPT + contextStr + stateInstruction;
+      // INTEGRAÇÃO: Smart Memory - inclui contexto inteligente
+      const prompt = GUARDIAN_PROMPT + contextStr + smartContextStr + stateInstruction;
       // Guardian recebe histórico para criação de orçamento em múltiplos turnos
       return await callClaude(prompt, userInput, 'claude-3-haiku-20240307', recentHistory);
     }
 
     case 'educator': {
       // Educador também recebe contexto para personalizar exemplos
-      const prompt = EDUCATOR_PROMPT + contextStr + stateInstruction;
+      // INTEGRAÇÃO: Smart Memory - inclui contexto inteligente
+      const prompt = EDUCATOR_PROMPT + contextStr + smartContextStr + stateInstruction;
       return await callClaude(prompt, userInput, 'claude-3-haiku-20240307', recentHistory);
     }
 
     case 'planner': {
       // Planner recebe contexto de objetivos e dados financeiros
-      const prompt = PLANNER_PROMPT + contextStr + stateInstruction;
+      // INTEGRAÇÃO: Smart Memory - inclui contexto inteligente
+      const prompt = PLANNER_PROMPT + contextStr + smartContextStr + stateInstruction;
       return await callClaude(prompt, userInput, 'claude-3-haiku-20240307', recentHistory);
     }
 
     default: {
       // Fallback para CFO
       logger.debug(`[Orchestrator] Agente desconhecido "${agent}", usando CFO`);
-      return await callClaude(CFO_PROMPT + contextStr + stateInstruction, userInput, 'claude-3-haiku-20240307', recentHistory);
+      return await callClaude(CFO_PROMPT + contextStr + smartContextStr + stateInstruction, userInput, 'claude-3-haiku-20240307', recentHistory);
     }
   }
 }

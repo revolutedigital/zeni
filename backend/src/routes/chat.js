@@ -9,6 +9,12 @@ import {
 } from '../services/conversationState.js';
 import { trackEvent } from '../services/analytics.js';
 import { logger } from '../services/logger.js';
+import {
+  getSmartContext,
+  extractAndSaveFacts,
+  formatSmartContextForPrompt
+} from '../services/smartMemory.js';
+import { getFinancialReaction, analyzeFinancialContext } from '../services/personality.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -220,18 +226,22 @@ router.post('/', upload.single('image'), async (req, res) => {
     // Buscar contexto (passando a mensagem para detectar período)
     const context = await getUserContext(req.userId, message);
 
-    // Buscar histórico recente da conversa para manter contexto
-    const historyResult = await pool.query(`
-      SELECT role, content FROM chat_history
-      WHERE user_id = $1
-      ORDER BY created_at DESC
-      LIMIT 20
-    `, [req.userId]);
+    // INTEGRAÇÃO: Smart Memory - usa contexto inteligente quando histórico é grande
+    const smartContext = await getSmartContext(req.userId, message);
+    let conversationHistory = smartContext.messages;
 
-    // Reverter para ordem cronológica (mais antiga primeiro)
-    const conversationHistory = historyResult.rows
-      .reverse()
-      .map(row => ({ role: row.role, content: row.content }));
+    // Adicionar contexto inteligente ao prompt (fatos do usuário + resumo)
+    let smartContextStr = formatSmartContextForPrompt(smartContext);
+
+    // INTEGRAÇÃO: Personality - analisar contexto financeiro para reações
+    const financialMood = analyzeFinancialContext({
+      income: context.income,
+      expenses: context.expenses,
+      budget: context.totalBudget,
+      previousExpenses: context.expenses * 0.9 // Estimativa para comparação
+    });
+
+    logger.debug({ smartContextLength: smartContext.messages.length, hasSummary: !!smartContext.summary }, 'Smart context loaded');
 
     // NOVO: Buscar estado da conversa para continuidade
     const conversationState = await getConversationState(req.userId);
@@ -242,7 +252,12 @@ router.post('/', upload.single('image'), async (req, res) => {
       data: context,
       hasImage,
       budgetAlerts: context.budgetAlerts,
-      conversationHistory
+      conversationHistory,
+      // INTEGRAÇÃO: Smart Memory - adiciona contexto inteligente
+      smartContextStr,
+      userFacts: smartContext.facts,
+      // INTEGRAÇÃO: Personality - adiciona contexto emocional
+      financialMood: financialMood.context
     };
 
     if (hasImage) {
@@ -279,6 +294,11 @@ router.post('/', upload.single('image'), async (req, res) => {
       messageLength: message?.length || 0
     });
 
+    // INTEGRAÇÃO: Smart Memory - extrair e salvar fatos importantes da conversa
+    extractAndSaveFacts(req.userId, message || '', response).catch(err => {
+      logger.warn({ err }, 'Failed to extract facts from conversation');
+    });
+
     // Se foi registro, tentar parsear e salvar transação
     if (agent === 'registrar' || agent === 'registrar_vision') {
       try {
@@ -308,6 +328,12 @@ router.post('/', upload.single('image'), async (req, res) => {
 
           // Substituir resposta JSON pela mensagem de confirmação amigável
           response = parsed.confirmation || `✅ Transação de R$${parsed.transaction.amount.toFixed(2)} registrada!`;
+
+          // INTEGRAÇÃO: Personality - adicionar reação para transação registrada
+          const reaction = getFinancialReaction('firstTransaction');
+          if (reaction && Math.random() > 0.7) { // 30% de chance de adicionar reação
+            response += `\n\n${reaction.message}`;
+          }
         }
       } catch (e) {
         // Não era JSON válido, só retorna a resposta como está
