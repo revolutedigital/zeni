@@ -91,6 +91,7 @@ const authLimiter = rateLimit({
   message: { error: 'Muitas tentativas de login. Aguarde 1 minuto.' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
 });
 
 // Rate limit para chat/IA: 30 requests por minuto (evita abuso de API Claude)
@@ -100,6 +101,7 @@ const chatLimiter = rateLimit({
   message: { error: 'Limite de mensagens atingido. Aguarde 1 minuto.' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
 });
 
 // Rate limit por usuário autenticado: 100 requests por minuto
