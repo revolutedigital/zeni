@@ -15,20 +15,34 @@ const migrate = spawn('node', ['scripts/migrate-goals.js'], {
 
 migrate.on('close', (code) => {
   if (code !== 0) {
-    console.error('❌ Erro ao executar migrações');
+    console.error('❌ Erro ao executar migrações de goals');
     process.exit(code);
   }
 
-  console.log('✅ Migrações concluídas!');
-  console.log('🚀 Iniciando servidor...');
+  console.log('✅ Migrações de goals concluídas!');
 
-  // Iniciar o servidor
-  const server = spawn('node', ['src/index.js'], {
+  // Executar migração de analytics (scheduled_actions, scheduled_alerts, analytics_events)
+  const migrateAnalytics = spawn('node', ['scripts/migrate-analytics.js'], {
     stdio: 'inherit'
   });
 
-  server.on('close', (code) => {
-    process.exit(code);
+  migrateAnalytics.on('close', (code2) => {
+    if (code2 !== 0) {
+      console.error('⚠️ Erro ao executar migrações de analytics (continuando...)');
+    } else {
+      console.log('✅ Migrações de analytics concluídas!');
+    }
+
+    console.log('🚀 Iniciando servidor...');
+
+    // Iniciar o servidor
+    const server = spawn('node', ['src/index.js'], {
+      stdio: 'inherit'
+    });
+
+    server.on('close', (code) => {
+      process.exit(code);
+    });
   });
 });
 

@@ -81,7 +81,7 @@ const generalLimiter = rateLimit({
   message: { error: 'Muitas requisições. Tente novamente em 1 minuto.' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip || req.headers['x-forwarded-for'] || 'unknown',
+  validate: { xForwardedForHeader: false },
 });
 
 // Rate limit para auth: 10 tentativas por minuto (proteção contra brute force)
@@ -110,8 +110,9 @@ const userRateLimiter = rateLimit({
   message: { error: 'Limite de requisições atingido. Aguarde 1 minuto.' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.userId || req.ip || 'unknown',
+  keyGenerator: (req) => req.userId || 'unknown',
   skip: (req) => !req.userId, // Só aplica para usuários autenticados
+  validate: { xForwardedForHeader: false },
 });
 
 // ===========================================
