@@ -1,1 +1,1 @@
-web: node migrate-and-start.js
+web: node src/index.js

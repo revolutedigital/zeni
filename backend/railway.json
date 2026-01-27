@@ -4,7 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "node migrate-and-start.js",
+    "startCommand": "node src/index.js",
     "restartPolicyType": "ON_FAILURE"
   }
 }

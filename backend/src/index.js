@@ -291,12 +291,42 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 // START SERVER
 // ===========================================
 
-app.listen(PORT, () => {
+// Run essential migrations on startup
+async function runStartupMigrations() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS scheduled_actions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        action_type VARCHAR(50) NOT NULL,
+        action_data JSONB NOT NULL,
+        scheduled_for TIMESTAMP NOT NULL,
+        status VARCHAR(20) DEFAULT 'pending',
+        executed_at TIMESTAMP,
+        result JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_scheduled_actions_pending
+      ON scheduled_actions(scheduled_for, status)
+      WHERE status = 'pending'
+    `);
+    logger.info('Startup migrations completed');
+  } catch (err) {
+    logger.warn({ err: err.message }, 'Startup migrations failed (may already exist)');
+  }
+}
+
+app.listen(PORT, async () => {
   logger.info({
     port: PORT,
     env: process.env.NODE_ENV || 'development',
     cors: allowedOrigins,
   }, `Zeni API started`);
+
+  // Run migrations before other startup tasks
+  await runStartupMigrations();
 
   logger.info({ url: `http://localhost:${PORT}` }, 'Zeni API started successfully');
 
