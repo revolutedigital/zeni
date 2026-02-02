@@ -7,6 +7,9 @@ import {
   GUARDIAN_PROMPT,
   EDUCATOR_PROMPT,
   PLANNER_PROMPT,
+  DETECTIVE_PROMPT,
+  NEGOTIATOR_PROMPT,
+  DEBT_DESTROYER_PROMPT,
   AGENT_METADATA
 } from './prompts.js';
 import {
@@ -114,6 +117,58 @@ const CFO_PATTERNS = [
   /\bao total\b/i,
 ];
 
+// Padrões para detetive (padrões e economia)
+const DETECTIVE_PATTERNS = [
+  /\bencontr(e|a|ar) padr[oõ]es\b/i,
+  /\bonde posso economizar\b/i,
+  /\bassinatura(s)? esquecida(s)?\b/i,
+  /\bservico(s)? que n[aã]o uso\b/i,
+  /\bgastos an[oô]malos?\b/i,
+  /\bgastos estranhos?\b/i,
+  /\bdetecte\b.*\b(padr[oõ]es?|anomalias?)\b/i,
+  /\bonde estou gastando demais\b/i,
+  /\bidentifique\b.*\b(problemas?|oportunidades?)\b/i,
+  /\banalise?\b.*\b(padr[oõ]es?|comportamento)\b/i,
+  /\b(tenho|tem) assinatura\b/i,
+  /\bgasto muito com\b/i,
+  /\binsights?\b/i,
+];
+
+// Padrões para negociador (redução de custos fixos)
+const NEGOTIATOR_PATTERNS = [
+  /\breduzir (custos?|contas?|gastos?)\b/i,
+  /\bdiminuir\b.*\b(conta|internet|telefone|academia)\b/i,
+  /\bnegoci(ar|ação)\b/i,
+  /\bconta(s)? cara(s)?\b/i,
+  /\bplano mais barato\b/i,
+  /\bcomo pagar menos\b/i,
+  /\b(internet|telefone|tv|academia|seguro)\b.*\bcar[ao]\b/i,
+  /\bcontas? fix(as?|os?)\b/i,
+  /\bprepare?\b.*\b(script|negociação)\b/i,
+  /\beconomizar em\b/i,
+  /\bmais barato\b/i,
+];
+
+// Padrões para debt destroyer (dívidas)
+const DEBT_DESTROYER_PATTERNS = [
+  /\bd[ií]vida(s)?\b/i,
+  /\bendividado\b/i,
+  /\bdevendo\b/i,
+  /\bquitar\b/i,
+  /\bpagar d[ií]vida\b/i,
+  /\bjuros\b.*\b(alto|car[ao]|abusivo)\b/i,
+  /\bcart[aã]o.*\batrasado\b/i,
+  /\bempréstimo\b/i,
+  /\bfinancia(mento)?\b/i,
+  /\bparcelado\b/i,
+  /\brenegoci(ar|ação)\b.*\bd[ií]vida\b/i,
+  /\bsnowball|avalanche\b/i,
+  /\bestrat[eé]gia.*\bquit(ar|ação)\b/i,
+  /\bcomo sair.*\bd[ií]vida\b/i,
+  /\bsair do vermelho\b/i,
+  /\bme ajude.*\bd[ií]vida\b/i,
+];
+
 // ============================================
 // FUNÇÕES DE DETECÇÃO
 // ============================================
@@ -150,6 +205,18 @@ function hasCFOIntent(input) {
 
 function hasPlannerIntent(input) {
   return PLANNER_PATTERNS.some(pattern => pattern.test(input));
+}
+
+function hasDetectiveIntent(input) {
+  return DETECTIVE_PATTERNS.some(pattern => pattern.test(input));
+}
+
+function hasNegotiatorIntent(input) {
+  return NEGOTIATOR_PATTERNS.some(pattern => pattern.test(input));
+}
+
+function hasDebtDestroyerIntent(input) {
+  return DEBT_DESTROYER_PATTERNS.some(pattern => pattern.test(input));
 }
 
 // ============================================
@@ -232,37 +299,55 @@ export function routeToAgent(userInput, context = {}, conversationHistory = [], 
     }
   }
 
-  // 5. Se é sobre objetivos/metas financeiras
+  // 5. Se é sobre dívidas (ALTA PRIORIDADE - problema urgente)
+  if (hasDebtDestroyerIntent(input)) {
+    logger.debug('[Orchestrator] → Agente: debt_destroyer (dívidas)');
+    return 'debt_destroyer';
+  }
+
+  // 6. Se é sobre negociação/redução de custos
+  if (hasNegotiatorIntent(input)) {
+    logger.debug('[Orchestrator] → Agente: negotiator (negociação)');
+    return 'negotiator';
+  }
+
+  // 7. Se é sobre padrões/economia
+  if (hasDetectiveIntent(input)) {
+    logger.debug('[Orchestrator] → Agente: detective (padrões)');
+    return 'detective';
+  }
+
+  // 8. Se é sobre objetivos/metas financeiras
   if (hasPlannerIntent(input)) {
     logger.debug('[Orchestrator] → Agente: planner (objetivos/metas)');
     return 'planner';
   }
 
-  // 6. PRIORIDADE: Se é análise financeira (CFO)
+  // 9. PRIORIDADE: Se é análise financeira (CFO)
   if (hasCFOIntent(input)) {
     logger.debug('[Orchestrator] → Agente: cfo (análise financeira)');
     return 'cfo';
   }
 
-  // 7. Se precisa de validação/consulta de gasto
+  // 10. Se precisa de validação/consulta de gasto
   if (hasGuardianIntent(input, context)) {
     logger.debug('[Orchestrator] → Agente: guardian (consulta de gasto)');
     return 'guardian';
   }
 
-  // 8. Se é pergunta conceitual/educacional
+  // 11. Se é pergunta conceitual/educacional
   if (hasEducationalIntent(input)) {
     logger.debug('[Orchestrator] → Agente: educator (pergunta educacional)');
     return 'educator';
   }
 
-  // 9. Se parece uma transação (registro de gasto/receita)
+  // 12. Se parece uma transação (registro de gasto/receita)
   if (hasTransactionIntent(input)) {
     logger.debug('[Orchestrator] → Agente: registrar (transação detectada)');
     return 'registrar';
   }
 
-  // 10. Default: CFO para perguntas gerais sobre finanças
+  // 13. Default: CFO para perguntas gerais sobre finanças
   logger.debug('[Orchestrator] → Agente: cfo (default)');
   return 'cfo';
 }
@@ -349,6 +434,30 @@ export async function executeAgent(agent, userInput, context = {}, conversationH
       // SELEÇÃO DINÂMICA: modelo baseado na complexidade do planejamento
       const model = selectModel('planner', userInput, recentHistory.length);
       return await callClaude(prompt, userInput, model, recentHistory);
+    }
+
+    case 'detective': {
+      // Detective analisa padrões e encontra oportunidades de economia
+      // INTEGRAÇÃO: Smart Memory - inclui contexto inteligente
+      const prompt = DETECTIVE_PROMPT + contextStr + smartContextStr + stateInstruction;
+      // SEMPRE Sonnet: análise complexa de padrões
+      return await callClaude(prompt, userInput, 'claude-sonnet-4-20250514', recentHistory);
+    }
+
+    case 'negotiator': {
+      // Negotiator ajuda a reduzir custos fixos
+      // INTEGRAÇÃO: Smart Memory - inclui contexto inteligente
+      const prompt = NEGOTIATOR_PROMPT + contextStr + smartContextStr + stateInstruction;
+      // Haiku: scripts estruturados
+      return await callClaude(prompt, userInput, 'claude-3-haiku-20240307', recentHistory);
+    }
+
+    case 'debt_destroyer': {
+      // Debt Destroyer cria estratégias de quitação
+      // INTEGRAÇÃO: Smart Memory - inclui contexto inteligente
+      const prompt = DEBT_DESTROYER_PROMPT + contextStr + smartContextStr + stateInstruction;
+      // Haiku: cálculos estruturados
+      return await callClaude(prompt, userInput, 'claude-3-haiku-20240307', recentHistory);
     }
 
     default: {

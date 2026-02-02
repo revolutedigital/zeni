@@ -15,11 +15,50 @@ import {
   formatSmartContextForPrompt
 } from '../services/smartMemory.js';
 import { getFinancialReaction, analyzeFinancialContext } from '../services/personality.js';
+import { prepareDetectiveContext } from '../services/patternAnalyzer.js';
+import { prepareDebtContext } from '../services/debtAnalyzer.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.use(authMiddleware);
+
+// Helper: Extrair JSON robusto de respostas do Claude
+function extractJSON(text, actionType = null) {
+  if (!text) return null;
+
+  try {
+    // Tentar parse direto primeiro
+    return JSON.parse(text);
+  } catch (e) {
+    // Não é JSON puro, vamos extrair
+  }
+
+  // Remover markdown code blocks
+  let cleaned = text.replace(/```(?:json)?\s*([\s\S]*?)```/g, '$1').trim();
+
+  // Se procurando uma ação específica, buscar o objeto com essa ação
+  if (actionType) {
+    const regex = new RegExp(`\\{[\\s\\S]*?"action"[\\s\\S]*?"${actionType}"[\\s\\S]*?\\}`, 'm');
+    const match = cleaned.match(regex);
+    if (match) {
+      cleaned = match[0];
+    }
+  } else {
+    // Buscar qualquer objeto JSON
+    const match = cleaned.match(/\{[\s\S]*?\}/);
+    if (match) {
+      cleaned = match[0];
+    }
+  }
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    logger.debug(`[extractJSON] Failed to parse: ${e.message}`);
+    return null;
+  }
+}
 
 // Detectar se a pergunta menciona um ano ou período específico
 function detectPeriodFromMessage(message) {
@@ -109,10 +148,88 @@ async function getUserContext(userId, message = '') {
     LIMIT 10
   `, [userId]);
 
+  // NOVO: Buscar goals/objetivos do usuário (para agente PLANNER)
+  const goalsResult = await pool.query(`
+    SELECT
+      id,
+      name,
+      description,
+      target_amount,
+      current_amount,
+      deadline,
+      priority,
+      category,
+      status,
+      CASE
+        WHEN target_amount > 0 THEN ROUND((current_amount / target_amount) * 100, 1)
+        ELSE 0
+      END as progress_percent,
+      CASE
+        WHEN deadline IS NOT NULL THEN
+          EXTRACT(EPOCH FROM (deadline - CURRENT_DATE)) / 86400
+        ELSE NULL
+      END as days_remaining
+    FROM goals
+    WHERE user_id = $1 AND status = 'active'
+    ORDER BY priority DESC, deadline ASC NULLS LAST
+  `, [userId]);
+
   const expenses = parseFloat(expensesResult.rows[0].total);
   const income = parseFloat(incomeResult.rows[0].total);
   const totalBudget = parseFloat(budgetResult.rows[0].total);
   const remaining = totalBudget - expenses;
+
+  // Calcular margem disponível para objetivos (receita - despesas)
+  const availableMargin = income - expenses;
+  // Total já comprometido com goals (soma de monthly_contribution de todos os goals)
+  const existingCommitments = goalsResult.rows.reduce((sum, g) => {
+    // Calcular contribuição mensal necessária
+    if (g.deadline && g.days_remaining > 0) {
+      const monthsRemaining = Math.ceil(g.days_remaining / 30);
+      const remainingAmount = parseFloat(g.target_amount) - parseFloat(g.current_amount);
+      return sum + (remainingAmount / monthsRemaining);
+    }
+    return sum;
+  }, 0);
+
+  // NOVO: Buscar transações dos últimos 6 meses (para agentes DETECTIVE e DEBT_DESTROYER)
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+  const last6MonthsTransactions = await pool.query(`
+    SELECT
+      t.id,
+      t.amount,
+      t.description,
+      t.date,
+      t.type,
+      t.paid,
+      c.name as category
+    FROM transactions t
+    LEFT JOIN categories c ON t.category_id = c.id
+    WHERE t.user_id = $1
+      AND t.date >= $2
+    ORDER BY t.date DESC
+  `, [userId, sixMonthsAgo.toISOString().split('T')[0]]);
+
+  // Preparar contextos especializados para novos agentes
+  let detectiveContext = null;
+  let debtContext = null;
+
+  // Só preparar se houver transações suficientes
+  if (last6MonthsTransactions.rows.length >= 20) {
+    try {
+      detectiveContext = prepareDetectiveContext(last6MonthsTransactions.rows);
+    } catch (err) {
+      logger.warn('[Chat] Erro ao preparar contexto Detective:', err.message);
+    }
+  }
+
+  try {
+    debtContext = prepareDebtContext(last6MonthsTransactions.rows, income, expenses);
+  } catch (err) {
+    logger.warn('[Chat] Erro ao preparar contexto Debt:', err.message);
+  }
 
   // Alertas de orçamento estourado
   const budgetAlerts = byCategory.rows
@@ -145,7 +262,28 @@ async function getUserContext(userId, message = '') {
     percentUsed: totalBudget > 0 ? Math.round((expenses / totalBudget) * 100) : 0,
     byCategory: formattedByCategory,
     recentTransactions: recent.rows,
-    budgetAlerts
+    budgetAlerts,
+    // NOVO: Dados para agente PLANNER
+    goals: goalsResult.rows.map(g => ({
+      id: g.id,
+      name: g.name,
+      description: g.description,
+      targetAmount: parseFloat(g.target_amount),
+      currentAmount: parseFloat(g.current_amount),
+      progressPercent: parseFloat(g.progress_percent),
+      deadline: g.deadline,
+      daysRemaining: g.days_remaining ? Math.floor(g.days_remaining) : null,
+      priority: g.priority,
+      category: g.category,
+      status: g.status
+    })),
+    monthlyIncome: income,
+    availableMargin,
+    existingCommitments,
+    // NOVO: Dados para agente DETECTIVE
+    detectiveAnalysis: detectiveContext,
+    // NOVO: Dados para agente DEBT_DESTROYER
+    debtAnalysis: debtContext
   };
 
   // Se perguntou sobre um ano específico, adicionar dados históricos
@@ -343,29 +481,21 @@ router.post('/', upload.single('image'), async (req, res) => {
     // Se Planner retornou ação de criar objetivo, executar
     if (agent === 'planner') {
       try {
-        let jsonStr = response;
+        const parsed = extractJSON(response, 'create_goal');
 
-        // Se tem markdown code block, extrair o JSON de dentro
-        const jsonMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
-        if (jsonMatch) {
-          jsonStr = jsonMatch[1].trim();
-        }
+        if (parsed?.action === 'create_goal' && parsed.goal) {
+          logger.info('[Chat] Planner retornou create_goal, criando objetivo...', parsed.goal);
 
-        // Tentar encontrar JSON de create_goal
-        const jsonObjectMatch = jsonStr.match(/\{[\s\S]*"action"[\s\S]*"create_goal"[\s\S]*\}/);
-        if (jsonObjectMatch) {
-          jsonStr = jsonObjectMatch[0];
-        }
-
-        const parsed = JSON.parse(jsonStr);
-        if (parsed.action === 'create_goal' && parsed.goal) {
-          logger.debug('[Chat] Planner retornou create_goal, criando objetivo...', parsed.goal);
+          // Validar dados obrigatórios
+          if (!parsed.goal.name || !parsed.goal.targetAmount) {
+            throw new Error('Goal name e targetAmount são obrigatórios');
+          }
 
           // Inserir objetivo no banco
           const insertResult = await pool.query(`
             INSERT INTO goals (user_id, name, description, target_amount, deadline, priority, category)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
-            RETURNING id
+            RETURNING id, name, target_amount
           `, [
             req.userId,
             parsed.goal.name,
@@ -376,43 +506,39 @@ router.post('/', upload.single('image'), async (req, res) => {
             parsed.goal.category || 'savings'
           ]);
 
-          logger.debug(`[Chat] Objetivo criado com ID: ${insertResult.rows[0].id}`);
+          const createdGoal = insertResult.rows[0];
+          logger.info(`[Chat] ✅ Objetivo criado com ID: ${createdGoal.id}`);
 
           // Substituir response pela mensagem de confirmação
-          response = parsed.message || parsed.confirmation || `🎯 Objetivo "${parsed.goal.name}" criado com sucesso! Meta: R$${parsed.goal.targetAmount.toLocaleString('pt-BR')}`;
+          response = parsed.message || parsed.confirmation || `🎯 Objetivo "${createdGoal.name}" criado com sucesso! Meta: R$${parseFloat(createdGoal.target_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        } else {
+          logger.debug('[Chat] Planner response não contém action create_goal');
         }
       } catch (e) {
-        logger.debug('[Chat] Planner response não é JSON de ação:', e.message);
-        // Não era JSON válido, só retorna a resposta
+        logger.error('[Chat] Erro ao processar create_goal:', e);
+        // Adicionar mensagem de erro visível ao usuário
+        response += '\n\n⚠️ Houve um problema ao salvar o objetivo. Por favor, tente novamente.';
       }
     }
 
     // Se CFO retornou ação de criar orçamentos, executar
     if (agent === 'cfo') {
       try {
-        // Tentar extrair JSON da resposta (pode estar em markdown ```json ou puro)
-        let jsonStr = response;
+        const parsed = extractJSON(response, 'create_budgets');
 
-        // Se tem markdown code block, extrair o JSON de dentro
-        const jsonMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
-        if (jsonMatch) {
-          jsonStr = jsonMatch[1].trim();
-        }
-
-        // Tentar encontrar JSON no texto (começa com { e termina com })
-        const jsonObjectMatch = jsonStr.match(/\{[\s\S]*"action"[\s\S]*"create_budgets"[\s\S]*\}/);
-        if (jsonObjectMatch) {
-          jsonStr = jsonObjectMatch[0];
-        }
-
-        logger.debug('[Chat] CFO response (primeiros 500 chars):', response.substring(0, 500));
-
-        const parsed = JSON.parse(jsonStr);
-        if (parsed.action === 'create_budgets' && parsed.budgets) {
-          logger.debug('[Chat] CFO retornou create_budgets, criando orçamentos...', parsed.budgets);
+        if (parsed?.action === 'create_budgets' && parsed.budgets && Array.isArray(parsed.budgets)) {
+          logger.info('[Chat] CFO retornou create_budgets, criando orçamentos...', { count: parsed.budgets.length });
 
           let createdCount = 0;
+          const errors = [];
+
           for (const budget of parsed.budgets) {
+            // Validar dados
+            if (!budget.category || !budget.amount) {
+              errors.push(`Orçamento inválido: ${JSON.stringify(budget)}`);
+              continue;
+            }
+
             // Buscar category_id pelo nome
             const catResult = await pool.query(
               'SELECT id FROM categories WHERE name ILIKE $1 LIMIT 1',
@@ -433,21 +559,32 @@ router.post('/', upload.single('image'), async (req, res) => {
                 context.month,
                 context.year
               ]);
-              logger.debug(`[Chat] Orçamento criado: ${budget.category} = R$${budget.amount}`);
+              logger.info(`[Chat] ✅ Orçamento criado: ${budget.category} = R$${budget.amount}`);
               createdCount++;
             } else {
+              errors.push(`Categoria não encontrada: ${budget.category}`);
               logger.warn(`[Chat] Categoria não encontrada: ${budget.category}`);
             }
           }
 
-          logger.debug(`[Chat] Total de orçamentos criados: ${createdCount}`);
+          logger.info(`[Chat] Total de orçamentos criados: ${createdCount}/${parsed.budgets.length}`);
 
           // Substituir response pelo texto de confirmação
-          response = parsed.confirmation || parsed.message || `✅ ${createdCount} orçamentos criados com sucesso!`;
+          if (createdCount > 0) {
+            response = parsed.confirmation || parsed.message || `✅ ${createdCount} orçamento(s) criado(s) com sucesso!`;
+            if (errors.length > 0) {
+              response += `\n\n⚠️ Alguns orçamentos não puderam ser criados: ${errors.join(', ')}`;
+            }
+          } else {
+            response = `⚠️ Não foi possível criar os orçamentos. Erros: ${errors.join(', ')}`;
+          }
+        } else {
+          logger.debug('[Chat] CFO response não contém action create_budgets');
         }
       } catch (e) {
-        logger.debug('[Chat] CFO response não é JSON de ação:', e.message);
-        // Não era JSON válido, só retorna a resposta
+        logger.error('[Chat] Erro ao processar create_budgets:', e);
+        // Adicionar mensagem de erro visível ao usuário
+        response += '\n\n⚠️ Houve um problema ao salvar os orçamentos. Por favor, tente novamente.';
       }
     }
 
