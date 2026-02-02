@@ -166,7 +166,7 @@ async function getUserContext(userId, message = '') {
       END as progress_percent,
       CASE
         WHEN deadline IS NOT NULL THEN
-          EXTRACT(EPOCH FROM (deadline - CURRENT_DATE)) / 86400
+          (deadline - CURRENT_DATE)
         ELSE NULL
       END as days_remaining
     FROM goals
@@ -603,6 +603,8 @@ router.post('/', upload.single('image'), async (req, res) => {
     });
   } catch (error) {
     logger.error('Erro no chat:', error);
+    console.error('DETALHE DO ERRO:', error.message);
+    console.error('STACK:', error.stack);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
