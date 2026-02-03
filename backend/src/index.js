@@ -16,6 +16,7 @@ import notificationsRouter from './routes/notifications.js';
 import alertsRouter from './routes/alerts.js';
 import onboardingRouter from './routes/onboarding.js';
 import goalsRouter from './routes/goals.js';
+import profileRouter from './routes/profile.js';
 import { logger, httpLogger } from './services/logger.js';
 import { runPeriodicChecks } from './services/agenticActions.js';
 import { ApiError } from './errors/ApiError.js';
@@ -158,6 +159,7 @@ app.use('/api/notifications', userRateLimiter, notificationsRouter);
 app.use('/api/alerts', userRateLimiter, alertsRouter);
 app.use('/api/onboarding', userRateLimiter, onboardingRouter);
 app.use('/api/goals', userRateLimiter, goalsRouter);
+app.use('/api/profile', userRateLimiter, profileRouter);
 
 // ===========================================
 // HEALTH CHECK & METRICS
@@ -312,6 +314,8 @@ async function runStartupMigrations() {
       ON scheduled_actions(scheduled_for, status)
       WHERE status = 'pending'
     `);
+    // Avatar column for user profile photos
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT');
     logger.info('Startup migrations completed');
   } catch (err) {
     logger.warn({ err: err.message }, 'Startup migrations failed (may already exist)');

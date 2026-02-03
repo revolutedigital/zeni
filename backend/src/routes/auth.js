@@ -67,7 +67,7 @@ router.post('/login', validateBody(loginSchema), async (req, res) => {
     auditLogger.auth('LOGIN_SUCCESS', user.id, true, { email });
 
     res.json({
-      user: { id: user.id, name: user.name, email: user.email },
+      user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar || null },
       token
     });
   } catch (error) {

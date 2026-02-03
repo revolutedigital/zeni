@@ -5,6 +5,7 @@ import ZeniMascot, { ZeniWelcome, ZeniTyping } from '../components/ZeniMascot'
 import { QuickActionsGrid, ContextualSuggestions } from '../components/QuickActions'
 import { useZeniPersonality } from '../hooks/useZeniPersonality'
 import { useAuth } from '../contexts/AuthContext'
+import Avatar from '../components/Avatar'
 
 // Configuração dos agentes com cores e variante da Zeni
 const AGENTS = {
@@ -477,13 +478,8 @@ export default function Chat() {
               </div>
 
               {msg.role === 'user' && (
-                <div
-                  className="w-10 h-10 rounded-full bg-emerald-700 flex items-center justify-center flex-shrink-0 border border-emerald-500/30"
-                  aria-hidden="true"
-                >
-                  <span className="text-sm font-bold text-emerald-100">
-                    {user?.name?.charAt(0)?.toUpperCase() || <User size={18} className="text-emerald-100" />}
-                  </span>
+                <div className="flex-shrink-0" aria-hidden="true">
+                  <Avatar user={user} size="md" />
                 </div>
               )}
             </article>

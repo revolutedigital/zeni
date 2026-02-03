@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { LayoutDashboard, Receipt, MessageCircle, LogOut, Trophy, Wallet } from 'lucide-react'
 import ZeniMascot from './ZeniMascot'
 import NotificationBell from './NotificationBell'
+import Avatar from './Avatar'
 
 /**
  * Layout - Chat-Centric Navigation 2026
@@ -44,9 +45,16 @@ export default function Layout({ children, user, onLogout }) {
             <span className="text-xl font-bold gradient-primary-text">Zeni</span>
           </Link>
           <div className="flex items-center gap-2">
-            <span className="text-zeni-muted text-sm hidden sm:block" aria-label={`Usuário: ${user?.name}`}>
-              {user?.name}
-            </span>
+            <Link
+              to="/profile"
+              className="flex items-center gap-2 hover:bg-zeni-card/50 rounded-xl px-2 py-1 transition-colors"
+              aria-label="Ir para perfil"
+            >
+              <Avatar user={user} size="sm" />
+              <span className="text-zeni-muted text-sm hidden sm:block">
+                {user?.name}
+              </span>
+            </Link>
             <NotificationBell />
             <button
               onClick={onLogout}

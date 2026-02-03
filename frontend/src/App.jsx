@@ -16,6 +16,7 @@ const GoalDetail = lazy(() => import('./pages/GoalDetail'))
 const Chat = lazy(() => import('./pages/Chat'))
 const Onboarding = lazy(() => import('./pages/Onboarding'))
 const Subscription = lazy(() => import('./pages/Subscription'))
+const Profile = lazy(() => import('./pages/Profile'))
 
 function AppContent() {
   const { isAuthenticated, isLoading, onboardingCompleted, logout, user } = useAuth()
@@ -61,6 +62,7 @@ function AppContent() {
             <Route path="/goals/:id" element={<GoalDetail />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/subscription" element={<Subscription />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/onboarding" element={<Navigate to="/" />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
