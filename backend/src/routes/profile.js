@@ -28,16 +28,28 @@ router.get('/', async (req, res) => {
 // PUT /api/profile - atualizar nome e/ou avatar
 router.put('/', async (req, res) => {
   try {
-    const { name, avatar, phone } = req.body;
+    let { name, avatar, phone } = req.body;
 
     // Validar avatar (max ~500KB base64)
     if (avatar && avatar.length > 700000) {
       return res.status(400).json({ error: 'Imagem muito grande. Máximo 500KB.' });
     }
 
-    // Validar nome
-    if (name !== undefined && (!name || name.trim().length < 2)) {
-      return res.status(400).json({ error: 'Nome deve ter pelo menos 2 caracteres.' });
+    // Validar e sanitizar nome (prevenir XSS)
+    if (name !== undefined) {
+      if (!name || name.trim().length < 2) {
+        return res.status(400).json({ error: 'Nome deve ter pelo menos 2 caracteres.' });
+      }
+      if (name.length > 100) {
+        return res.status(400).json({ error: 'Nome muito longo. Máximo 100 caracteres.' });
+      }
+      // Remover tags HTML e caracteres perigosos
+      name = name.trim().replace(/<[^>]*>/g, '').replace(/[<>\"\'&]/g, '');
+    }
+
+    // Sanitizar phone
+    if (phone !== undefined && phone) {
+      phone = phone.replace(/[^0-9()\-\s+]/g, '').slice(0, 20);
     }
 
     const result = await pool.query(

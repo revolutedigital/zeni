@@ -78,7 +78,12 @@ function ContributionModal({ show, onClose, onSubmit, loading }) {
 
   function handleSubmit(e) {
     e.preventDefault()
-    onSubmit({ amount: parseFloat(amount), date, note })
+    const parsedAmount = parseFloat(amount)
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      alert('Por favor, insira um valor válido maior que zero')
+      return
+    }
+    onSubmit({ amount: parsedAmount, date, note })
     setAmount('')
     setNote('')
   }
@@ -156,27 +161,33 @@ export default function GoalDetail() {
   const [contributionLoading, setContributionLoading] = useState(false)
 
   useEffect(() => {
-    loadGoal()
-  }, [id])
+    let isMounted = true
 
-  async function loadGoal() {
-    setLoading(true)
-    try {
-      const token = localStorage.getItem('zeni_token')
-      const res = await fetch(`${API_URL}/goals/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      if (!res.ok) throw new Error('Falha ao carregar objetivo')
-      const data = await res.json()
-      setGoal(data.goal || null)
-      setContributions(data.contributions || [])
-      setStats(data.stats || {})
-    } catch (error) {
-      console.error('Erro ao carregar objetivo:', error)
-    } finally {
-      setLoading(false)
+    async function loadGoal() {
+      setLoading(true)
+      try {
+        const token = localStorage.getItem('zeni_token')
+        const res = await fetch(`${API_URL}/goals/${id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        if (!res.ok) throw new Error('Falha ao carregar objetivo')
+        const data = await res.json()
+        if (!isMounted) return
+        setGoal(data.goal || null)
+        setContributions(data.contributions || [])
+        setStats(data.stats || {})
+      } catch (error) {
+        if (isMounted && process.env.NODE_ENV !== 'production') {
+          console.error('Erro ao carregar objetivo:', error)
+        }
+      } finally {
+        if (isMounted) setLoading(false)
+      }
     }
-  }
+
+    loadGoal()
+    return () => { isMounted = false }
+  }, [id])
 
   async function handleContribute(data) {
     setContributionLoading(true)
@@ -194,7 +205,7 @@ export default function GoalDetail() {
       setShowContributeModal(false)
       loadGoal()
     } catch (error) {
-      console.error('Erro ao contribuir:', error)
+      if (process.env.NODE_ENV !== 'production') console.error('Erro ao contribuir:', error)
     } finally {
       setContributionLoading(false)
     }
@@ -211,7 +222,7 @@ export default function GoalDetail() {
       if (!res.ok) throw new Error('Falha ao reanalisar')
       loadGoal()
     } catch (error) {
-      console.error('Erro ao reanalisar:', error)
+      if (process.env.NODE_ENV !== 'production') console.error('Erro ao reanalisar:', error)
     } finally {
       setAnalyzing(false)
     }

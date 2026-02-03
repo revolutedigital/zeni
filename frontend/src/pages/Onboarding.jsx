@@ -601,7 +601,7 @@ export default function Onboarding() {
       const token = localStorage.getItem('zeni_token')
 
       // Salvar passo 5
-      await fetch(`${API_URL}/onboarding/step/5`, {
+      const step5Res = await fetch(`${API_URL}/onboarding/step/5`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -611,7 +611,7 @@ export default function Onboarding() {
           createGoal,
           goal: createGoal ? {
             name: data.goal?.name,
-            targetAmount: parseFloat(data.goal?.targetAmount),
+            targetAmount: parseFloat(data.goal?.targetAmount) || 0,
             deadline: data.goal?.deadline || null,
             priority: 'high',
             category: 'savings'
@@ -619,8 +619,12 @@ export default function Onboarding() {
         })
       })
 
+      if (!step5Res.ok) {
+        throw new Error('Falha ao salvar objetivo')
+      }
+
       // Finalizar onboarding
-      await fetch(`${API_URL}/onboarding/complete`, {
+      const completeRes = await fetch(`${API_URL}/onboarding/complete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -628,10 +632,15 @@ export default function Onboarding() {
         }
       })
 
+      if (!completeRes.ok) {
+        throw new Error('Falha ao finalizar onboarding')
+      }
+
       // Redirecionar para dashboard
       navigate('/')
     } catch (error) {
-      console.error('Erro ao finalizar:', error)
+      if (process.env.NODE_ENV !== 'production') console.error('Erro ao finalizar:', error)
+      alert('Erro ao finalizar configuração. Tente novamente.')
     } finally {
       setCompleting(false)
     }
