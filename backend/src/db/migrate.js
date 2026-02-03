@@ -17,7 +17,12 @@ async function migrate() {
 
     console.log('✅ Migração concluída com sucesso!');
   } catch (error) {
-    console.error('❌ Erro na migração:', error);
+    // Em produção, não expor stack trace completo
+    if (process.env.NODE_ENV === 'production') {
+      console.error('❌ Erro na migração:', error.message);
+    } else {
+      console.error('❌ Erro na migração:', error);
+    }
     throw error;
   } finally {
     client.release();

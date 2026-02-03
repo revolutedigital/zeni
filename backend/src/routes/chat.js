@@ -83,7 +83,7 @@ function detectPeriodFromMessage(message) {
 
   // Detectar ano específico (2020-2030)
   const yearMatch = msg.match(/\b(20[2-3][0-9])\b/);
-  const requestedYear = yearMatch ? parseInt(yearMatch[1]) : null;
+  const requestedYear = yearMatch ? parseInt(yearMatch[1], 10) : null;
 
   // Detectar se é pergunta sobre "total" ou "ano todo"
   const isYearlyQuery = /\b(ano|total|anual|tudo|todos?)\b/.test(msg) && requestedYear;
@@ -620,39 +620,59 @@ router.post('/', upload.single('image'), async (req, res) => {
           let createdCount = 0;
           const errors = [];
 
-          for (const budget of parsed.budgets) {
-            // Validar dados
-            if (!budget.category || !budget.amount) {
-              errors.push(`Orçamento inválido: ${JSON.stringify(budget)}`);
-              continue;
+          // Usar transação para garantir atomicidade
+          const budgetClient = await pool.connect();
+          try {
+            await budgetClient.query('BEGIN');
+
+            for (const budget of parsed.budgets) {
+              // Validar dados
+              if (!budget.category || !budget.amount) {
+                errors.push(`Orçamento inválido: ${JSON.stringify(budget)}`);
+                continue;
+              }
+
+              // Validar amount
+              const budgetAmount = parseFloat(budget.amount);
+              if (isNaN(budgetAmount) || budgetAmount <= 0) {
+                errors.push(`Valor inválido para ${budget.category}`);
+                continue;
+              }
+
+              // Buscar category_id pelo nome
+              const catResult = await budgetClient.query(
+                'SELECT id FROM categories WHERE name ILIKE $1 LIMIT 1',
+                [budget.category]
+              );
+
+              if (catResult.rows[0]) {
+                // Inserir ou atualizar orçamento
+                await budgetClient.query(`
+                  INSERT INTO budgets (user_id, category_id, amount, month, year)
+                  VALUES ($1, $2, $3, $4, $5)
+                  ON CONFLICT (user_id, category_id, month, year)
+                  DO UPDATE SET amount = EXCLUDED.amount
+                `, [
+                  req.userId,
+                  catResult.rows[0].id,
+                  budgetAmount,
+                  context.month,
+                  context.year
+                ]);
+                logger.info(`[Chat] ✅ Orçamento criado: ${budget.category} = R$${budgetAmount}`);
+                createdCount++;
+              } else {
+                errors.push(`Categoria não encontrada: ${budget.category}`);
+                logger.warn(`[Chat] Categoria não encontrada: ${budget.category}`);
+              }
             }
 
-            // Buscar category_id pelo nome
-            const catResult = await pool.query(
-              'SELECT id FROM categories WHERE name ILIKE $1 LIMIT 1',
-              [budget.category]
-            );
-
-            if (catResult.rows[0]) {
-              // Inserir ou atualizar orçamento
-              await pool.query(`
-                INSERT INTO budgets (user_id, category_id, amount, month, year)
-                VALUES ($1, $2, $3, $4, $5)
-                ON CONFLICT (user_id, category_id, month, year)
-                DO UPDATE SET amount = EXCLUDED.amount
-              `, [
-                req.userId,
-                catResult.rows[0].id,
-                budget.amount,
-                context.month,
-                context.year
-              ]);
-              logger.info(`[Chat] ✅ Orçamento criado: ${budget.category} = R$${budget.amount}`);
-              createdCount++;
-            } else {
-              errors.push(`Categoria não encontrada: ${budget.category}`);
-              logger.warn(`[Chat] Categoria não encontrada: ${budget.category}`);
-            }
+            await budgetClient.query('COMMIT');
+          } catch (budgetErr) {
+            await budgetClient.query('ROLLBACK');
+            throw budgetErr;
+          } finally {
+            budgetClient.release();
           }
 
           logger.info(`[Chat] Total de orçamentos criados: ${createdCount}/${parsed.budgets.length}`);

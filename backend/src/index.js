@@ -291,8 +291,23 @@ app.use((err, req, res, _next) => {
 // GRACEFUL SHUTDOWN
 // ===========================================
 
+// Armazenar referências para cleanup
+let agenticIntervalId = null;
+let agenticTimeoutId = null;
+
 const shutdown = (signal) => {
   logger.info({ signal }, 'Shutting down gracefully...');
+
+  // Limpar intervals/timeouts para evitar memory leaks
+  if (agenticIntervalId) {
+    clearInterval(agenticIntervalId);
+    agenticIntervalId = null;
+  }
+  if (agenticTimeoutId) {
+    clearTimeout(agenticTimeoutId);
+    agenticTimeoutId = null;
+  }
+
   process.exit(0);
 };
 
@@ -346,14 +361,14 @@ app.listen(PORT, async () => {
 
   // Iniciar job de ações agenticas (a cada 5 minutos)
   if (isProduction) {
-    setInterval(() => {
+    agenticIntervalId = setInterval(() => {
       runPeriodicChecks().catch(err => {
         logger.error({ err }, 'Agentic actions job failed');
       });
     }, 5 * 60 * 1000); // 5 minutos
 
     // Executar uma vez na inicialização (após 30 segundos)
-    setTimeout(() => {
+    agenticTimeoutId = setTimeout(() => {
       runPeriodicChecks().catch(err => {
         logger.error({ err }, 'Initial agentic check failed');
       });

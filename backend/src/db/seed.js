@@ -94,11 +94,19 @@ async function seed() {
     }
 
     console.log('✅ Transações de exemplo criadas');
-    console.log('\n📝 Login: igor@zeni.app / SenhaForte123!');
+    // Não logar credenciais em produção
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('\n📝 Login: igor@zeni.app / SenhaForte123!');
+    }
     console.log('✅ Seed concluído!');
 
   } catch (error) {
-    console.error('❌ Erro no seed:', error);
+    // Em produção, não expor stack trace completo
+    if (process.env.NODE_ENV === 'production') {
+      console.error('❌ Erro no seed:', error.message);
+    } else {
+      console.error('❌ Erro no seed:', error);
+    }
     throw error;
   } finally {
     client.release();
