@@ -90,7 +90,7 @@ export class BudgetRepository extends BaseRepository {
       [userId, month, year]
     );
 
-    return parseFloat(result.rows[0].total);
+    return parseFloat(result.rows[0]?.total) || 0;
   }
 
   /**

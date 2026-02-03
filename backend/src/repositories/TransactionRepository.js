@@ -182,12 +182,12 @@ export class TransactionRepository extends BaseRepository {
     return {
       year: parseInt(year, 10),
       expenses: {
-        total: parseFloat(totalExpenses.rows[0].total),
-        count: parseInt(totalExpenses.rows[0].count, 10),
+        total: parseFloat(totalExpenses.rows[0]?.total) || 0,
+        count: parseInt(totalExpenses.rows[0]?.count, 10) || 0,
       },
       income: {
-        total: parseFloat(totalIncome.rows[0].total),
-        count: parseInt(totalIncome.rows[0].count, 10),
+        total: parseFloat(totalIncome.rows[0]?.total) || 0,
+        count: parseInt(totalIncome.rows[0]?.count, 10) || 0,
       },
       byMonth: byMonth.rows.map((r) => ({
         month: parseInt(r.month, 10),
@@ -293,11 +293,11 @@ export class TransactionRepository extends BaseRepository {
       FROM transactions
       WHERE user_id = $1
         AND type = 'expense'
-        AND date >= NOW() - INTERVAL '${months} months'
+        AND date >= NOW() - make_interval(months => $2)
       GROUP BY EXTRACT(MONTH FROM date)
       ORDER BY month DESC
     `,
-      [userId]
+      [userId, parseInt(months) || 6]
     );
 
     const monthlyExpenses = result.rows.map((r) => parseFloat(r.total));

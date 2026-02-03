@@ -171,8 +171,8 @@ export default function Transactions() {
   const sortedDates = Object.keys(groupedByDate).sort((a, b) => new Date(b) - new Date(a))
 
   // Totais
-  const totalIncome = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + parseFloat(t.amount), 0)
-  const totalExpense = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + parseFloat(t.amount), 0)
+  const totalIncome = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0)
+  const totalExpense = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0)
 
   return (
     <div className="space-y-4">

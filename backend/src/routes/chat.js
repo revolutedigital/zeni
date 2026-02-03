@@ -345,11 +345,13 @@ async function getUserContext(userId, message = '') {
       ORDER BY month
     `, [userId, targetYear]);
 
+    const yExpenses = parseFloat(yearlyExpenses.rows[0]?.total) || 0;
+    const yIncome = parseFloat(yearlyIncome.rows[0]?.total) || 0;
     context.yearlyData = {
       year: targetYear,
-      totalExpenses: parseFloat(yearlyExpenses.rows[0].total),
-      totalIncome: parseFloat(yearlyIncome.rows[0].total),
-      balance: parseFloat(yearlyIncome.rows[0].total) - parseFloat(yearlyExpenses.rows[0].total),
+      totalExpenses: yExpenses,
+      totalIncome: yIncome,
+      balance: yIncome - yExpenses,
       byCategory: yearlyByCategory.rows.map(row => ({
         name: row.name,
         spent: parseFloat(row.spent)

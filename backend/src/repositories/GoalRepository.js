@@ -182,8 +182,8 @@ export class GoalRepository extends BaseRepository {
     // Buscar valor atualizado
     const updatedGoal = await this.pool.query('SELECT current_amount, target_amount FROM goals WHERE id = $1', [goalId]);
 
-    const newCurrentAmount = parseFloat(updatedGoal.rows[0].current_amount);
-    const targetAmount = parseFloat(updatedGoal.rows[0].target_amount);
+    const newCurrentAmount = parseFloat(updatedGoal.rows[0]?.current_amount) || 0;
+    const targetAmount = parseFloat(updatedGoal.rows[0]?.target_amount) || 1;
     const progressPercent = Math.round((newCurrentAmount / targetAmount) * 100 * 10) / 10;
 
     // Verificar se atingiu a meta
@@ -233,8 +233,8 @@ export class GoalRepository extends BaseRepository {
     const updatedGoal = await this.pool.query('SELECT current_amount, target_amount FROM goals WHERE id = $1', [goalId]);
 
     const goal = updatedGoal.rows[0];
-    const currentAmount = parseFloat(goal.current_amount);
-    const targetAmount = parseFloat(goal.target_amount);
+    const currentAmount = parseFloat(goal?.current_amount) || 0;
+    const targetAmount = parseFloat(goal?.target_amount) || 1;
 
     return {
       found: true,

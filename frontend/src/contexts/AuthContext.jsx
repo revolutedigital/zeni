@@ -13,8 +13,13 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('zeni_token'))
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('zeni_user')
-    return saved ? JSON.parse(saved) : null
+    try {
+      const saved = localStorage.getItem('zeni_user')
+      return saved ? JSON.parse(saved) : null
+    } catch {
+      localStorage.removeItem('zeni_user')
+      return null
+    }
   })
   const [onboardingCompleted, setOnboardingCompleted] = useState(null)
   const [isLoading, setIsLoading] = useState(true)

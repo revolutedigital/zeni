@@ -8,6 +8,14 @@ function getHeaders() {
   }
 }
 
+async function handleResponse(res) {
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data.error || `Erro ${res.status}`)
+  }
+  return res.json()
+}
+
 // Auth
 export async function login(email, password) {
   const res = await fetch(`${API_URL}/auth/login`, {
@@ -15,8 +23,7 @@ export async function login(email, password) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password })
   })
-  if (!res.ok) throw new Error('Credenciais inválidas')
-  return res.json()
+  return handleResponse(res)
 }
 
 export async function register(name, email, password) {
@@ -25,8 +32,7 @@ export async function register(name, email, password) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, email, password })
   })
-  if (!res.ok) throw new Error('Erro no cadastro')
-  return res.json()
+  return handleResponse(res)
 }
 
 // Transactions
@@ -35,14 +41,14 @@ export async function getTransactions(params = {}) {
   const res = await fetch(`${API_URL}/transactions?${query}`, {
     headers: getHeaders()
   })
-  return res.json()
+  return handleResponse(res)
 }
 
 export async function getSummary(month, year) {
   const res = await fetch(`${API_URL}/transactions/summary?month=${month}&year=${year}`, {
     headers: getHeaders()
   })
-  return res.json()
+  return handleResponse(res)
 }
 
 export async function createTransaction(data) {
@@ -51,7 +57,7 @@ export async function createTransaction(data) {
     headers: getHeaders(),
     body: JSON.stringify(data)
   })
-  return res.json()
+  return handleResponse(res)
 }
 
 export async function deleteTransaction(id) {
@@ -59,7 +65,7 @@ export async function deleteTransaction(id) {
     method: 'DELETE',
     headers: getHeaders()
   })
-  return res.json()
+  return handleResponse(res)
 }
 
 // Categories
@@ -68,7 +74,7 @@ export async function getCategories(type) {
   const res = await fetch(`${API_URL}/categories${query}`, {
     headers: getHeaders()
   })
-  return res.json()
+  return handleResponse(res)
 }
 
 // Budgets
@@ -76,7 +82,7 @@ export async function getBudgets(month, year) {
   const res = await fetch(`${API_URL}/budgets?month=${month}&year=${year}`, {
     headers: getHeaders()
   })
-  return res.json()
+  return handleResponse(res)
 }
 
 // Chat
@@ -95,14 +101,14 @@ export async function sendMessage(message, image = null) {
     },
     body: formData
   })
-  return res.json()
+  return handleResponse(res)
 }
 
 export async function getChatHistory() {
   const res = await fetch(`${API_URL}/chat/history`, {
     headers: getHeaders()
   })
-  return res.json()
+  return handleResponse(res)
 }
 
 // Onboarding
@@ -110,7 +116,7 @@ export async function getOnboardingStatus() {
   const res = await fetch(`${API_URL}/onboarding/status`, {
     headers: getHeaders()
   })
-  return res.json()
+  return handleResponse(res)
 }
 
 export async function saveOnboardingStep(stepNumber, data) {
@@ -119,14 +125,14 @@ export async function saveOnboardingStep(stepNumber, data) {
     headers: getHeaders(),
     body: JSON.stringify(data)
   })
-  return res.json()
+  return handleResponse(res)
 }
 
 export async function getSuggestedBudgets() {
   const res = await fetch(`${API_URL}/onboarding/suggested-budgets`, {
     headers: getHeaders()
   })
-  return res.json()
+  return handleResponse(res)
 }
 
 export async function completeOnboarding() {
@@ -134,7 +140,7 @@ export async function completeOnboarding() {
     method: 'POST',
     headers: getHeaders()
   })
-  return res.json()
+  return handleResponse(res)
 }
 
 // Goals
@@ -142,14 +148,14 @@ export async function getGoals(status = 'active') {
   const res = await fetch(`${API_URL}/goals?status=${status}`, {
     headers: getHeaders()
   })
-  return res.json()
+  return handleResponse(res)
 }
 
 export async function getGoal(id) {
   const res = await fetch(`${API_URL}/goals/${id}`, {
     headers: getHeaders()
   })
-  return res.json()
+  return handleResponse(res)
 }
 
 export async function createGoal(data) {
@@ -158,7 +164,7 @@ export async function createGoal(data) {
     headers: getHeaders(),
     body: JSON.stringify(data)
   })
-  return res.json()
+  return handleResponse(res)
 }
 
 export async function updateGoal(id, data) {
@@ -167,7 +173,7 @@ export async function updateGoal(id, data) {
     headers: getHeaders(),
     body: JSON.stringify(data)
   })
-  return res.json()
+  return handleResponse(res)
 }
 
 export async function deleteGoal(id) {
@@ -175,7 +181,7 @@ export async function deleteGoal(id) {
     method: 'DELETE',
     headers: getHeaders()
   })
-  return res.json()
+  return handleResponse(res)
 }
 
 export async function contributeToGoal(id, data) {
@@ -184,7 +190,7 @@ export async function contributeToGoal(id, data) {
     headers: getHeaders(),
     body: JSON.stringify(data)
   })
-  return res.json()
+  return handleResponse(res)
 }
 
 export async function analyzeGoal(id) {
@@ -192,14 +198,14 @@ export async function analyzeGoal(id) {
     method: 'POST',
     headers: getHeaders()
   })
-  return res.json()
+  return handleResponse(res)
 }
 
 export async function getGoalsSummary() {
   const res = await fetch(`${API_URL}/goals/summary/overview`, {
     headers: getHeaders()
   })
-  return res.json()
+  return handleResponse(res)
 }
 
 // Alerts/Notifications
@@ -216,7 +222,7 @@ export async function markAlertAsRead(alertId) {
     method: 'PATCH',
     headers: getHeaders()
   })
-  return res.json()
+  return handleResponse(res)
 }
 
 export async function getUserStats() {
