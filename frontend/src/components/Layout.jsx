@@ -39,7 +39,7 @@ export default function Layout({ children, user, onLogout }) {
             aria-label="Zeni - Ir para chat"
           >
             <div className="transition-transform duration-200 group-hover:scale-110">
-              <ZeniMascot variant="icon" size="md" animated animation="breathe" />
+              <ZeniMascot variant="icon" size="sm" animated animation="breathe" />
             </div>
             <span className="text-xl font-bold gradient-primary-text">Zeni</span>
           </Link>

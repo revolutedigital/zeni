@@ -392,7 +392,7 @@ export default function Chat() {
                     key={id}
                     className={`flex items-center gap-2 p-2 rounded-xl ${agent.bgColor} border ${agent.borderColor}`}
                   >
-                    <ZeniMascot variant={agent.zeniVariant} size="sm" />
+                    <ZeniMascot variant={agent.zeniVariant} size="md" />
                     <div className="min-w-0">
                       <span className={`font-medium text-xs ${agent.color}`}>{agent.name}</span>
                       <p className="text-[10px] text-zeni-muted truncate">{agent.description}</p>
