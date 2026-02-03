@@ -1,12 +1,12 @@
 import React from 'react';
 
-// Import all mascot variations
-import ZeniDefault from '../assets/mascot/zeni-mascot.svg';
-import ZeniIcon from '../assets/mascot/zeni-icon.svg';
-import ZeniWaving from '../assets/mascot/zeni-waving.svg';
-import ZeniThinking from '../assets/mascot/zeni-thinking.svg';
-import ZeniHappy from '../assets/mascot/zeni-happy.svg';
-import ZeniWorried from '../assets/mascot/zeni-worried.svg';
+// Import all mascot variations (PNG com fundo transparente)
+import ZeniDefault from '../assets/mascot/zeni-mascot.png';
+import ZeniIcon from '../assets/mascot/zeni-icon.png';
+import ZeniWaving from '../assets/mascot/zeni-waving.png';
+import ZeniThinking from '../assets/mascot/zeni-thinking.png';
+import ZeniHappy from '../assets/mascot/zeni-happy.png';
+import ZeniWorried from '../assets/mascot/zeni-worried.png';
 
 /**
  * Componente da mascote Zeni
