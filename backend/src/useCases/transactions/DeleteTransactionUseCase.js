@@ -6,7 +6,7 @@
 
 import { transactionRepository } from '../../repositories/TransactionRepository.js';
 import { ApiError, validateUUID } from '../../errors/ApiError.js';
-import { logger } from '../../services/logger.js';
+import { logger, auditLogger } from '../../services/logger.js';
 
 export class DeleteTransactionUseCase {
   /**
@@ -27,6 +27,11 @@ export class DeleteTransactionUseCase {
     }
 
     logger.info({ userId, transactionId: id }, 'Transaction deleted');
+
+    // Audit trail para compliance financeiro (DELETE é crítico)
+    auditLogger.transaction('DELETE', userId, id, {
+      action: 'permanent_delete'
+    });
 
     return { success: true, message: 'Transação deletada' };
   }

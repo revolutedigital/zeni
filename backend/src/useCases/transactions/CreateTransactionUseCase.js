@@ -6,7 +6,7 @@
 
 import { transactionRepository } from '../../repositories/TransactionRepository.js';
 import { ApiError } from '../../errors/ApiError.js';
-import { logger } from '../../services/logger.js';
+import { logger, auditLogger } from '../../services/logger.js';
 
 export class CreateTransactionUseCase {
   /**
@@ -50,6 +50,14 @@ export class CreateTransactionUseCase {
     });
 
     logger.info({ userId, transactionId: transaction.id, type, amount }, 'Transaction created');
+
+    // Audit trail para compliance financeiro
+    auditLogger.transaction('CREATE', userId, transaction.id, {
+      amount,
+      type,
+      description: description.trim(),
+      source
+    });
 
     return transaction;
   }

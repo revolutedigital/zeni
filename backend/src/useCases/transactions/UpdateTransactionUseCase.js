@@ -6,7 +6,7 @@
 
 import { transactionRepository } from '../../repositories/TransactionRepository.js';
 import { ApiError, validateUUID } from '../../errors/ApiError.js';
-import { logger } from '../../services/logger.js';
+import { logger, auditLogger } from '../../services/logger.js';
 
 export class UpdateTransactionUseCase {
   /**
@@ -61,6 +61,11 @@ export class UpdateTransactionUseCase {
     }
 
     logger.info({ userId, transactionId: id }, 'Transaction updated');
+
+    // Audit trail para compliance financeiro
+    auditLogger.transaction('UPDATE', userId, id, {
+      changedFields: Object.keys(data).filter(k => data[k] !== undefined)
+    });
 
     return transaction;
   }

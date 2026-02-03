@@ -96,8 +96,32 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
+
+// ===========================================
+// SEGURANÇA: CSRF Protection (Custom Header)
+// ===========================================
+// Requer header X-Requested-With em operações de escrita
+// Browsers não permitem headers customizados em cross-origin sem CORS
+const csrfProtection = (req, res, next) => {
+  // Apenas em produção e para métodos que modificam dados
+  if (isProduction && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
+    // Rotas de auth são isentas (login/register não têm token ainda)
+    if (req.path.startsWith('/api/auth')) {
+      return next();
+    }
+
+    const requestedWith = req.headers['x-requested-with'];
+    if (requestedWith !== 'XMLHttpRequest') {
+      logger.warn({ path: req.path, method: req.method }, 'CSRF protection: missing X-Requested-With header');
+      return res.status(403).json({ error: 'Requisição inválida (CSRF)' });
+    }
+  }
+  next();
+};
+
+app.use(csrfProtection);
 
 // ===========================================
 // SEGURANÇA: Rate Limiting
