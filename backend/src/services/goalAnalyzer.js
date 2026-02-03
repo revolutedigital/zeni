@@ -59,7 +59,7 @@ async function getUserFinancialData(userId) {
   `, [userId]);
 
   const user = userResult.rows[0] || {};
-  const monthlyIncome = parseFloat(user.monthly_income) || 0;
+  const monthlyIncome = parseFloat(user.monthly_income || 0) || 0;
   const profile = user.onboarding_profile || {};
 
   // Gastos dos últimos 3 meses

@@ -80,10 +80,13 @@ export async function getUserSubscriptions(userId) {
     SELECT endpoint, keys FROM push_subscriptions WHERE user_id = $1
   `, [userId]);
 
-  return result.rows.map(row => ({
-    endpoint: row.endpoint,
-    keys: typeof row.keys === 'string' ? JSON.parse(row.keys) : row.keys
-  }));
+  return result.rows.map(row => {
+    let keys = row.keys;
+    if (typeof keys === 'string') {
+      try { keys = JSON.parse(keys); } catch { keys = {}; }
+    }
+    return { endpoint: row.endpoint, keys };
+  });
 }
 
 /**

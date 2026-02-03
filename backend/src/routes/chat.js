@@ -184,19 +184,18 @@ async function getUserContext(userId, message = '') {
     ORDER BY priority DESC, deadline ASC NULLS LAST
   `, [userId]);
 
-  const expenses = parseFloat(expensesResult.rows[0].total);
-  const income = parseFloat(incomeResult.rows[0].total);
-  const totalBudget = parseFloat(budgetResult.rows[0].total);
+  const expenses = parseFloat(expensesResult.rows[0]?.total) || 0;
+  const income = parseFloat(incomeResult.rows[0]?.total) || 0;
+  const totalBudget = parseFloat(budgetResult.rows[0]?.total) || 0;
   const remaining = totalBudget - expenses;
 
   // Calcular margem disponível para objetivos (receita - despesas)
   const availableMargin = income - expenses;
   // Total já comprometido com goals (soma de monthly_contribution de todos os goals)
   const existingCommitments = goalsResult.rows.reduce((sum, g) => {
-    // Calcular contribuição mensal necessária
     if (g.deadline && g.days_remaining > 0) {
-      const monthsRemaining = Math.ceil(g.days_remaining / 30);
-      const remainingAmount = parseFloat(g.target_amount) - parseFloat(g.current_amount);
+      const monthsRemaining = Math.max(Math.ceil(g.days_remaining / 30), 1);
+      const remainingAmount = (parseFloat(g.target_amount) || 0) - (parseFloat(g.current_amount) || 0);
       return sum + (remainingAmount / monthsRemaining);
     }
     return sum;

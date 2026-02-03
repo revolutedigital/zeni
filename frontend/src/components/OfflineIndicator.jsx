@@ -12,10 +12,11 @@ export default function OfflineIndicator() {
   const [isReconnecting, setIsReconnecting] = useState(false)
 
   useEffect(() => {
+    let hideTimer = null
+
     const handleOnline = () => {
       setIsOnline(true)
-      // Esconde banner após 2 segundos quando volta online
-      setTimeout(() => setShowBanner(false), 2000)
+      hideTimer = setTimeout(() => setShowBanner(false), 2000)
     }
 
     const handleOffline = () => {
@@ -26,12 +27,12 @@ export default function OfflineIndicator() {
     window.addEventListener('online', handleOnline)
     window.addEventListener('offline', handleOffline)
 
-    // Verificar status inicial
     if (!navigator.onLine) {
       setShowBanner(true)
     }
 
     return () => {
+      clearTimeout(hideTimer)
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
     }
@@ -47,7 +48,7 @@ export default function OfflineIndicator() {
       })
       if (response.ok) {
         setIsOnline(true)
-        setTimeout(() => setShowBanner(false), 1000)
+        setShowBanner(false)
       }
     } catch {
       // Ainda offline
