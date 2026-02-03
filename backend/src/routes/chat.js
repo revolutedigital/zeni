@@ -476,9 +476,9 @@ router.post('/', upload.single('image'), async (req, res) => {
         // Tentar extrair JSON robusto (suporta markdown code blocks, texto antes/depois)
         const parsed = extractJSON(response) || JSON.parse(response);
         if (parsed.success && parsed.transaction) {
-          // Buscar category_id
+          // Buscar category_id (exact match case-insensitive, não ILIKE que permite wildcards)
           const catResult = await pool.query(
-            'SELECT id FROM categories WHERE name ILIKE $1 LIMIT 1',
+            'SELECT id FROM categories WHERE LOWER(name) = LOWER($1) LIMIT 1',
             [parsed.transaction.category]
           );
           const categoryId = catResult.rows[0]?.id || null;
@@ -644,9 +644,9 @@ router.post('/', upload.single('image'), async (req, res) => {
                 continue;
               }
 
-              // Buscar category_id pelo nome
+              // Buscar category_id pelo nome (exact match, não ILIKE)
               const catResult = await budgetClient.query(
-                'SELECT id FROM categories WHERE name ILIKE $1 LIMIT 1',
+                'SELECT id FROM categories WHERE LOWER(name) = LOWER($1) LIMIT 1',
                 [budget.category]
               );
 

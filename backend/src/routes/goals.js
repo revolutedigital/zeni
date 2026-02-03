@@ -5,6 +5,7 @@
  */
 
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { authMiddleware } from './auth.js';
 import { asyncHandler } from '../errors/ApiError.js';
 import {
@@ -22,6 +23,17 @@ import {
 const router = Router();
 
 router.use(authMiddleware);
+
+// Rate limit específico para análise de goals (chama Claude API - caro)
+const analyzeRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 5, // Máximo 5 análises por hora por usuário
+  message: { error: 'Limite de análises atingido. Tente novamente em 1 hora.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.userId, // Rate limit por usuário, não por IP
+  validate: { xForwardedForHeader: false },
+});
 
 /**
  * GET /api/goals
@@ -166,10 +178,11 @@ router.delete(
 
 /**
  * POST /api/goals/:id/analyze
- * Re-analyze goal viability
+ * Re-analyze goal viability (rate limited - Claude API is expensive)
  */
 router.post(
   '/:id/analyze',
+  analyzeRateLimiter,
   asyncHandler(async (req, res) => {
     const { id } = req.params;
 

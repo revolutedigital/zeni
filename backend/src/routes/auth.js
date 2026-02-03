@@ -146,16 +146,36 @@ router.post('/login', validateBody(loginSchema), async (req, res) => {
   }
 });
 
-// Token blacklist (em produção, usar Redis com TTL)
-const tokenBlacklist = new Set();
+// Token blacklist com expiração (em produção, usar Redis com TTL)
+// Map: token -> expiresAt timestamp
+const tokenBlacklist = new Map();
 
 // Limpar tokens expirados periodicamente (a cada hora)
 setInterval(() => {
-  // Em uma implementação real, verificar expiração de cada token
-  // Por ora, manter o set para tokens recentes
+  const now = Date.now();
+  let removedCount = 0;
+
+  // Remover apenas tokens que já expiraram (não são mais válidos de qualquer forma)
+  for (const [token, expiresAt] of tokenBlacklist.entries()) {
+    if (expiresAt < now) {
+      tokenBlacklist.delete(token);
+      removedCount++;
+    }
+  }
+
+  if (removedCount > 0) {
+    logger.debug({ removedCount, remaining: tokenBlacklist.size }, 'Expired tokens cleaned from blacklist');
+  }
+
+  // Se ainda estiver muito grande, remover os mais antigos (FIFO)
   if (tokenBlacklist.size > 10000) {
-    tokenBlacklist.clear();
-    logger.info('Token blacklist cleared due to size limit');
+    const entries = Array.from(tokenBlacklist.entries());
+    entries.sort((a, b) => a[1] - b[1]); // Ordenar por expiração
+    const toRemove = entries.slice(0, entries.length - 5000); // Manter 5000 mais recentes
+    for (const [token] of toRemove) {
+      tokenBlacklist.delete(token);
+    }
+    logger.warn({ removed: toRemove.length, remaining: tokenBlacklist.size }, 'Token blacklist trimmed (keeping newest)');
   }
 }, 60 * 60 * 1000);
 
@@ -173,8 +193,10 @@ router.post('/logout', (req, res) => {
     // Verificar se token é válido antes de invalidar
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      // Adicionar token à blacklist
-      tokenBlacklist.add(token);
+      // Adicionar token à blacklist com sua data de expiração
+      // exp está em segundos desde epoch, converter para milissegundos
+      const expiresAt = decoded.exp ? decoded.exp * 1000 : Date.now() + 7 * 24 * 60 * 60 * 1000;
+      tokenBlacklist.set(token, expiresAt);
       auditLogger.auth('LOGOUT_SUCCESS', decoded.userId, true, {});
       logger.info({ userId: decoded.userId }, 'User logged out');
     } catch (jwtError) {
@@ -206,7 +228,7 @@ export function authMiddleware(req, res, next) {
   const token = authHeader.split(' ')[1];
 
   // Verificar se token está na blacklist (logout)
-  if (tokenBlacklist.has(token)) {
+  if (tokenBlacklist.has(token) && tokenBlacklist.get(token) > Date.now()) {
     return res.status(401).json({ error: 'Sessão encerrada. Faça login novamente.' });
   }
 

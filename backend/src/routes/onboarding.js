@@ -75,12 +75,14 @@ router.post('/step/2', async (req, res) => {
 
     // fixedExpenses: { housing, transport, health, education, debts }
 
-    if (!monthlyIncome || monthlyIncome <= 0) {
-      return res.status(400).json({ error: 'Renda mensal inválida' });
+    // Validação robusta de monthlyIncome
+    const income = parseFloat(monthlyIncome);
+    if (isNaN(income) || income <= 0 || income > 999999999.99 || !isFinite(income)) {
+      return res.status(400).json({ error: 'Renda mensal inválida. Valor máximo: R$999.999.999,99' });
     }
 
     const totalFixed = Object.values(fixedExpenses || {}).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
-    const availableForVariable = monthlyIncome - totalFixed;
+    const availableForVariable = income - totalFixed;
 
     await pool.query(`
       UPDATE users
@@ -90,7 +92,7 @@ router.post('/step/2', async (req, res) => {
       WHERE id = $1
     `, [
       req.userId,
-      monthlyIncome,
+      income,
       JSON.stringify({
         step: 2,
         fixedExpenses,
@@ -103,7 +105,7 @@ router.post('/step/2', async (req, res) => {
       success: true,
       nextStep: 3,
       summary: {
-        monthlyIncome,
+        monthlyIncome: income,
         totalFixed,
         availableForVariable
       }

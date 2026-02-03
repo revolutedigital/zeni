@@ -9,11 +9,11 @@ import { Router } from 'express';
 import pool from '../db/connection.js';
 import { authMiddleware } from './auth.js';
 import analytics from '../services/analytics.js';
-import { logger } from '../services/logger.js';
+import { logger, auditLogger } from '../services/logger.js';
 
 const router = Router();
 
-// Middleware para verificar se é admin
+// Middleware para verificar se é admin com audit trail
 async function adminMiddleware(req, res, next) {
   try {
     const result = await pool.query(
@@ -22,8 +22,17 @@ async function adminMiddleware(req, res, next) {
     );
 
     if (!result.rows[0]?.is_admin) {
+      // Log tentativa de acesso não autorizado
+      logger.warn({ userId: req.userId, path: req.path, method: req.method }, 'Unauthorized admin access attempt');
       return res.status(403).json({ error: 'Acesso negado' });
     }
+
+    // Audit trail para todas as ações admin
+    auditLogger.auth('ADMIN_ACCESS', req.userId, true, {
+      endpoint: req.path,
+      method: req.method,
+      ip: req.ip || req.headers['x-forwarded-for']
+    });
 
     next();
   } catch (error) {
@@ -175,40 +184,24 @@ router.get('/revenue', async (req, res) => {
 
 /**
  * GET /admin/health
- * Health check do sistema
+ * Health check do sistema (apenas status essencial, sem info de arquitetura)
  */
 router.get('/health', async (req, res) => {
   try {
-    // Check database
-    const dbCheck = await pool.query('SELECT NOW()');
+    // Check database apenas
+    await pool.query('SELECT 1');
 
-    // Count tables (não expor nomes - princípio do menor privilégio)
-    const tableCount = await pool.query(`
-      SELECT COUNT(*) as count
-      FROM information_schema.tables
-      WHERE table_schema = 'public'
-    `);
-
-    // Recent activity
-    const recentChats = await pool.query(`
-      SELECT COUNT(*) as count
-      FROM chat_history
-      WHERE created_at >= NOW() - INTERVAL '1 hour'
-    `);
-
+    // Resposta mínima - sem exposição de arquitetura
     res.json({
       status: 'healthy',
       database: 'connected',
-      timestamp: dbCheck.rows[0].now,
-      tableCount: parseInt(tableCount.rows[0]?.count, 10) || 0,
-      lastHourActivity: {
-        chatMessages: parseInt(recentChats.rows[0]?.count, 10) || 0
-      }
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
+    // Não expor mensagem de erro detalhada
+    logger.error({ err: error }, '[Admin] Health check failed');
     res.status(500).json({
-      status: 'unhealthy',
-      error: error.message
+      status: 'unhealthy'
     });
   }
 });

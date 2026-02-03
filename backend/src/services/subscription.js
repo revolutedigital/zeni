@@ -64,37 +64,55 @@ export const PLANS = {
 
 /**
  * Busca o plano atual do usuário
+ * Usa transação atômica para evitar race condition no downgrade
  */
 export async function getUserSubscription(userId) {
-  const result = await pool.query(`
-    SELECT subscription_tier, subscription_expires_at
-    FROM users
-    WHERE id = $1
-  `, [userId]);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
 
-  const user = result.rows[0];
-  if (!user) return null;
-
-  const tier = user.subscription_tier || 'free';
-  const expiresAt = user.subscription_expires_at;
-
-  // Verificar se expirou
-  if (expiresAt && new Date(expiresAt) < new Date()) {
-    // Expirou - fazer downgrade para free
-    await pool.query(`
-      UPDATE users
-      SET subscription_tier = 'free', subscription_expires_at = NULL
+    // SELECT FOR UPDATE previne race conditions
+    const result = await client.query(`
+      SELECT subscription_tier, subscription_expires_at
+      FROM users
       WHERE id = $1
+      FOR UPDATE
     `, [userId]);
-    return { tier: 'free', plan: PLANS.free, expired: true };
-  }
 
-  return {
-    tier,
-    plan: PLANS[tier] || PLANS.free,
-    expiresAt,
-    expired: false
-  };
+    const user = result.rows[0];
+    if (!user) {
+      await client.query('COMMIT');
+      return null;
+    }
+
+    const tier = user.subscription_tier || 'free';
+    const expiresAt = user.subscription_expires_at;
+
+    // Verificar se expirou
+    if (expiresAt && new Date(expiresAt) < new Date()) {
+      // Expirou - fazer downgrade para free (atomicamente)
+      await client.query(`
+        UPDATE users
+        SET subscription_tier = 'free', subscription_expires_at = NULL
+        WHERE id = $1
+      `, [userId]);
+      await client.query('COMMIT');
+      return { tier: 'free', plan: PLANS.free, expired: true };
+    }
+
+    await client.query('COMMIT');
+    return {
+      tier,
+      plan: PLANS[tier] || PLANS.free,
+      expiresAt,
+      expired: false
+    };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 /**
