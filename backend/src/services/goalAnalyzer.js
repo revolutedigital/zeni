@@ -198,31 +198,48 @@ function parseAnalysisResponse(response) {
   // Tentar extrair JSON da resposta
   let jsonStr = response;
 
-  // Se a resposta tem markdown code block
-  const jsonMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (jsonMatch) {
-    jsonStr = jsonMatch[1].trim();
+  try {
+    // Se a resposta tem markdown code block
+    const jsonMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[1].trim();
+    }
+
+    // Tentar encontrar objeto JSON na resposta
+    const objectMatch = response.match(/\{[\s\S]*\}/);
+    if (objectMatch) {
+      jsonStr = objectMatch[0];
+    }
+
+    const parsed = JSON.parse(jsonStr);
+
+    // Validar campos obrigatórios
+    return {
+      viabilityScore: parsed.viabilityScore || 50,
+      viabilityLevel: parsed.viabilityLevel || 'medium',
+      analysis: parsed.analysis || '',
+      monthlyContributionSuggested: parsed.monthlyContributionSuggested || 0,
+      percentOfMargin: parsed.percentOfMargin || 0,
+      actionPlan: parsed.actionPlan || [],
+      risks: parsed.risks || [],
+      recommendation: parsed.recommendation || ''
+    };
+  } catch (err) {
+    // Log do erro com amostra da resposta para debugging
+    logger.error({ err, responsePreview: response?.substring(0, 200) }, 'Failed to parse goal analysis response');
+
+    // Retornar valores default seguros
+    return {
+      viabilityScore: 50,
+      viabilityLevel: 'medium',
+      analysis: 'Não foi possível analisar o objetivo. Tente novamente.',
+      monthlyContributionSuggested: 0,
+      percentOfMargin: 0,
+      actionPlan: [],
+      risks: ['Análise indisponível no momento'],
+      recommendation: 'Tente novamente mais tarde.'
+    };
   }
-
-  // Tentar encontrar objeto JSON na resposta
-  const objectMatch = response.match(/\{[\s\S]*\}/);
-  if (objectMatch) {
-    jsonStr = objectMatch[0];
-  }
-
-  const parsed = JSON.parse(jsonStr);
-
-  // Validar campos obrigatórios
-  return {
-    viabilityScore: parsed.viabilityScore || 50,
-    viabilityLevel: parsed.viabilityLevel || 'medium',
-    analysis: parsed.analysis || '',
-    monthlyContributionSuggested: parsed.monthlyContributionSuggested || 0,
-    percentOfMargin: parsed.percentOfMargin || 0,
-    actionPlan: parsed.actionPlan || [],
-    risks: parsed.risks || [],
-    recommendation: parsed.recommendation || ''
-  };
 }
 
 /**

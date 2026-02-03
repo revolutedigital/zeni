@@ -76,19 +76,21 @@ function simulatePayoff(sortedDebts, availableMargin) {
 
     let remainingMargin = availableMargin;
 
-    // Aplicar juros
+    // Aplicar juros (com proteção contra NaN)
     debts.forEach(d => {
       if (d.amount > 0) {
-        const interest = d.amount * (d.interestRate / 100);
+        const rate = parseFloat(d.interestRate) || 0;
+        const interest = d.amount * (rate / 100);
         d.amount += interest;
         totalInterestPaid += interest;
       }
     });
 
-    // Pagar mínimos
+    // Pagar mínimos (com proteção contra NaN)
     debts.forEach(d => {
       if (d.amount > 0 && remainingMargin > 0) {
-        const payment = Math.min(d.minimumPayment, d.amount, remainingMargin);
+        const minPayment = parseFloat(d.minimumPayment) || 0;
+        const payment = Math.min(minPayment, d.amount, remainingMargin);
         d.amount -= payment;
         remainingMargin -= payment;
 

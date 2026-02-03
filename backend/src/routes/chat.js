@@ -21,7 +21,12 @@ import { prepareDebtContext } from '../services/debtAnalyzer.js';
 const router = Router();
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB max por arquivo
+    files: 1,                    // Apenas 1 arquivo por request
+    fields: 5,                   // Max 5 campos de formulário
+    fieldSize: 50 * 1024         // 50KB max por campo (mensagem)
+  },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);

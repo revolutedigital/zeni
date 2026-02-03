@@ -47,8 +47,11 @@ router.put('/', async (req, res) => {
       name = name.trim().replace(/<[^>]*>/g, '').replace(/[<>\"\'&]/g, '');
     }
 
-    // Sanitizar phone
+    // Sanitizar phone - validar comprimento ANTES do regex para evitar DoS
     if (phone !== undefined && phone) {
+      if (phone.length > 30) {
+        return res.status(400).json({ error: 'Telefone muito longo. Máximo 30 caracteres.' });
+      }
       phone = phone.replace(/[^0-9()\-\s+]/g, '').slice(0, 20);
     }
 

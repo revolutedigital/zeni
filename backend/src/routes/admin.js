@@ -182,14 +182,14 @@ router.get('/health', async (req, res) => {
     // Check database
     const dbCheck = await pool.query('SELECT NOW()');
 
-    // Check tables
-    const tables = await pool.query(`
-      SELECT table_name
+    // Count tables (não expor nomes - princípio do menor privilégio)
+    const tableCount = await pool.query(`
+      SELECT COUNT(*) as count
       FROM information_schema.tables
       WHERE table_schema = 'public'
     `);
 
-    // Recent errors (from logs if available)
+    // Recent activity
     const recentChats = await pool.query(`
       SELECT COUNT(*) as count
       FROM chat_history
@@ -200,7 +200,7 @@ router.get('/health', async (req, res) => {
       status: 'healthy',
       database: 'connected',
       timestamp: dbCheck.rows[0].now,
-      tables: tables.rows.map(r => r.table_name),
+      tableCount: parseInt(tableCount.rows[0]?.count, 10) || 0,
       lastHourActivity: {
         chatMessages: parseInt(recentChats.rows[0]?.count, 10) || 0
       }
