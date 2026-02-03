@@ -29,7 +29,7 @@ router.post('/register', validateBody(registerSchema), async (req, res) => {
     );
 
     const user = result.rows[0];
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     auditLogger.auth('REGISTER_SUCCESS', user.id, true, { email });
     logger.info({ userId: user.id, email }, 'New user registered');
@@ -62,7 +62,7 @@ router.post('/login', validateBody(loginSchema), async (req, res) => {
       return res.status(401).json({ error: 'Email ou senha inválidos' });
     }
 
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     auditLogger.auth('LOGIN_SUCCESS', user.id, true, { email });
 

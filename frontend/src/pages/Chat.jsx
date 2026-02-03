@@ -181,26 +181,32 @@ export default function Chat() {
   }
 
   useEffect(() => {
+    let isMounted = true
+
+    async function loadHistory() {
+      try {
+        const history = await getChatHistory()
+        if (!isMounted) return
+        setMessages(history)
+        if (history.length > 0) {
+          setShowExamples(false)
+        }
+      } catch (error) {
+        if (isMounted && process.env.NODE_ENV !== 'production') {
+          console.error('Erro ao carregar histórico:', error)
+        }
+      } finally {
+        if (isMounted) setLoadingHistory(false)
+      }
+    }
+
     loadHistory()
+    return () => { isMounted = false }
   }, [])
 
   useEffect(() => {
     scrollToBottom()
   }, [messages])
-
-  async function loadHistory() {
-    try {
-      const history = await getChatHistory()
-      setMessages(history)
-      if (history.length > 0) {
-        setShowExamples(false)
-      }
-    } catch (error) {
-      console.error('Erro ao carregar histórico:', error)
-    } finally {
-      setLoadingHistory(false)
-    }
-  }
 
   function scrollToBottom() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })

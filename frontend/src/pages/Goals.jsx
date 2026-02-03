@@ -342,36 +342,60 @@ export default function Goals() {
   const [filter, setFilter] = useState('active')
 
   useEffect(() => {
+    let isMounted = true
+
+    async function loadGoals() {
+      setLoading(true)
+      try {
+        const token = localStorage.getItem('zeni_token')
+        const res = await fetch(`${API_URL}/goals?status=${filter}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        const data = await res.json()
+        if (isMounted) setGoals(data.goals || [])
+      } catch (error) {
+        if (isMounted && process.env.NODE_ENV !== 'production') {
+          console.error('Erro ao carregar objetivos:', error)
+        }
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+
+    async function loadSummary() {
+      try {
+        const token = localStorage.getItem('zeni_token')
+        const res = await fetch(`${API_URL}/goals/summary/overview`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        const data = await res.json()
+        if (isMounted) setSummary(data)
+      } catch (error) {
+        if (isMounted && process.env.NODE_ENV !== 'production') {
+          console.error('Erro ao carregar resumo:', error)
+        }
+      }
+    }
+
     loadGoals()
     loadSummary()
+
+    return () => { isMounted = false }
   }, [filter])
 
-  async function loadGoals() {
+  async function handleRefresh() {
+    const token = localStorage.getItem('zeni_token')
     setLoading(true)
     try {
-      const token = localStorage.getItem('zeni_token')
       const res = await fetch(`${API_URL}/goals?status=${filter}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       const data = await res.json()
       setGoals(data.goals || [])
     } catch (error) {
-      console.error('Erro ao carregar objetivos:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function loadSummary() {
-    try {
-      const token = localStorage.getItem('zeni_token')
-      const res = await fetch(`${API_URL}/goals/summary/overview`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      const data = await res.json()
-      setSummary(data)
-    } catch (error) {
-      console.error('Erro ao carregar resumo:', error)
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Erro ao carregar objetivos:', error)
+      }
     }
   }
 

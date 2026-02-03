@@ -122,6 +122,8 @@ export default function Dashboard() {
   }, [year, month, isCurrentMonth, now])
 
   useEffect(() => {
+    let isMounted = true
+
     async function load() {
       setLoading(true)
       try {
@@ -132,18 +134,23 @@ export default function Dashboard() {
           getGoalsSummary().catch(() => null),
           getGoals('active').catch(() => ({ goals: [] }))
         ])
+        if (!isMounted) return
         setSummary(summaryData)
         setRecent(transactionsData)
         setBudgets(budgetsData)
         setGoalsSummary(goalsData)
         setActiveGoals(goalsList.goals?.slice(0, 3) || [])
       } catch (error) {
-        console.error('Erro ao carregar dashboard:', error)
+        if (isMounted && process.env.NODE_ENV !== 'production') {
+          console.error('Erro ao carregar dashboard:', error)
+        }
       } finally {
-        setLoading(false)
+        if (isMounted) setLoading(false)
       }
     }
     load()
+
+    return () => { isMounted = false }
   }, [month, year])
 
   // Memoized callbacks para navegação
