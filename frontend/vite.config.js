@@ -53,7 +53,7 @@ export default defineConfig({
                 maxAgeSeconds: 60 * 5 // 5 minutes
               },
               cacheableResponse: {
-                statuses: [0, 200]
+                statuses: [200] // Não cachear status 0 (erros de rede)
               },
               networkTimeoutSeconds: 10
             }

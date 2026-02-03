@@ -132,8 +132,8 @@ export function detectAnomalies(transactions, threshold = 2) {
 
   return anomalies.map(a => ({
     ...a,
-    deviation: ((a.amount - mean) / stdDev).toFixed(2),
-    percentAboveMean: (((a.amount - mean) / mean) * 100).toFixed(0)
+    deviation: stdDev > 0 ? ((a.amount - mean) / stdDev).toFixed(2) : '0',
+    percentAboveMean: mean > 0 ? (((a.amount - mean) / mean) * 100).toFixed(0) : '0'
   }));
 }
 

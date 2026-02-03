@@ -433,15 +433,25 @@ router.post('/', upload.single('image'), async (req, res) => {
     await saveConversationState(req.userId, newState);
     logger.debug('[Chat] Novo estado salvo:', JSON.stringify(newState));
 
-    // Salvar no histórico
-    await pool.query(
-      'INSERT INTO chat_history (user_id, role, content, agent) VALUES ($1, $2, $3, $4)',
-      [req.userId, 'user', message || '[imagem]', null]
-    );
-    await pool.query(
-      'INSERT INTO chat_history (user_id, role, content, agent) VALUES ($1, $2, $3, $4)',
-      [req.userId, 'assistant', response, agent]
-    );
+    // Salvar no histórico (transação para garantir consistência)
+    const historyClient = await pool.connect();
+    try {
+      await historyClient.query('BEGIN');
+      await historyClient.query(
+        'INSERT INTO chat_history (user_id, role, content, agent) VALUES ($1, $2, $3, $4)',
+        [req.userId, 'user', message || '[imagem]', null]
+      );
+      await historyClient.query(
+        'INSERT INTO chat_history (user_id, role, content, agent) VALUES ($1, $2, $3, $4)',
+        [req.userId, 'assistant', response, agent]
+      );
+      await historyClient.query('COMMIT');
+    } catch (histErr) {
+      await historyClient.query('ROLLBACK');
+      logger.error('Failed to save chat history:', histErr);
+    } finally {
+      historyClient.release();
+    }
 
     // Track analytics event
     trackEvent(req.userId, 'chat_message', {

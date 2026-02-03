@@ -118,6 +118,7 @@ function getTimePeriod() {
  * Escolhe mensagem aleatória de um array
  */
 function pickRandom(arr) {
+  if (!arr || arr.length === 0) return '';
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
