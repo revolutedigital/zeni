@@ -4,6 +4,7 @@ import { sendMessage, getChatHistory } from '../services/api'
 import ZeniMascot, { ZeniWelcome, ZeniTyping } from '../components/ZeniMascot'
 import { QuickActionsGrid, ContextualSuggestions } from '../components/QuickActions'
 import { useZeniPersonality } from '../hooks/useZeniPersonality'
+import { useAuth } from '../contexts/AuthContext'
 
 // Configuração dos agentes com cores e variante da Zeni
 const AGENTS = {
@@ -157,6 +158,7 @@ function renderMarkdown(text) {
 }
 
 export default function Chat() {
+  const { user } = useAuth()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -457,10 +459,15 @@ export default function Chat() {
               <div
                 className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-warm-sm ${
                   msg.role === 'user'
-                    ? 'gradient-primary text-white shadow-glow'
+                    ? 'bg-emerald-800/80 text-gray-100 border border-emerald-600/30'
                     : `glass-card border ${agentConfig?.borderColor || 'border-zeni-border'}`
                 }`}
               >
+                {msg.role === 'user' && (
+                  <p className="text-xs text-emerald-300 mb-1 font-medium">
+                    {user?.name || 'Você'}
+                  </p>
+                )}
                 {msg.role === 'assistant' && agentConfig && (
                   <p className={`text-xs ${agentConfig.color} mb-1 font-medium flex items-center gap-1`}>
                     <span aria-hidden="true">{agentConfig.emoji}</span> {agentConfig.name}
@@ -471,10 +478,12 @@ export default function Chat() {
 
               {msg.role === 'user' && (
                 <div
-                  className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center flex-shrink-0 shadow-glow"
+                  className="w-10 h-10 rounded-full bg-emerald-700 flex items-center justify-center flex-shrink-0 border border-emerald-500/30"
                   aria-hidden="true"
                 >
-                  <User size={18} className="text-white" />
+                  <span className="text-sm font-bold text-emerald-100">
+                    {user?.name?.charAt(0)?.toUpperCase() || <User size={18} className="text-emerald-100" />}
+                  </span>
                 </div>
               )}
             </article>
