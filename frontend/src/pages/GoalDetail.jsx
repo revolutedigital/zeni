@@ -166,10 +166,11 @@ export default function GoalDetail() {
       const res = await fetch(`${API_URL}/goals/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
+      if (!res.ok) throw new Error('Falha ao carregar objetivo')
       const data = await res.json()
-      setGoal(data.goal)
+      setGoal(data.goal || null)
       setContributions(data.contributions || [])
-      setStats(data.stats)
+      setStats(data.stats || {})
     } catch (error) {
       console.error('Erro ao carregar objetivo:', error)
     } finally {
@@ -181,7 +182,7 @@ export default function GoalDetail() {
     setContributionLoading(true)
     try {
       const token = localStorage.getItem('zeni_token')
-      await fetch(`${API_URL}/goals/${id}/contribute`, {
+      const res = await fetch(`${API_URL}/goals/${id}/contribute`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -189,6 +190,7 @@ export default function GoalDetail() {
         },
         body: JSON.stringify(data)
       })
+      if (!res.ok) throw new Error('Falha ao contribuir')
       setShowContributeModal(false)
       loadGoal()
     } catch (error) {
@@ -202,10 +204,11 @@ export default function GoalDetail() {
     setAnalyzing(true)
     try {
       const token = localStorage.getItem('zeni_token')
-      await fetch(`${API_URL}/goals/${id}/analyze`, {
+      const res = await fetch(`${API_URL}/goals/${id}/analyze`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       })
+      if (!res.ok) throw new Error('Falha ao reanalisar')
       loadGoal()
     } catch (error) {
       console.error('Erro ao reanalisar:', error)
@@ -219,10 +222,11 @@ export default function GoalDetail() {
 
     try {
       const token = localStorage.getItem('zeni_token')
-      await fetch(`${API_URL}/goals/${id}`, {
+      const res = await fetch(`${API_URL}/goals/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
+      if (!res.ok) throw new Error('Falha ao excluir')
       navigate('/goals')
     } catch (error) {
       console.error('Erro ao excluir:', error)
@@ -234,10 +238,11 @@ export default function GoalDetail() {
 
     try {
       const token = localStorage.getItem('zeni_token')
-      await fetch(`${API_URL}/goals/${id}/contributions/${contributionId}`, {
+      const res = await fetch(`${API_URL}/goals/${id}/contributions/${contributionId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
+      if (!res.ok) throw new Error('Falha ao remover contribuição')
       loadGoal()
     } catch (error) {
       console.error('Erro ao remover contribuição:', error)

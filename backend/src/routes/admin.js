@@ -55,8 +55,8 @@ router.get('/analytics', async (req, res) => {
  */
 router.get('/analytics/dau', async (req, res) => {
   try {
-    const { days = 30 } = req.query;
-    const trend = await analytics.getDAUTrend(parseInt(days));
+    const days = Math.min(Math.max(parseInt(req.query.days) || 30, 1), 365);
+    const trend = await analytics.getDAUTrend(days);
     res.json(trend);
   } catch (error) {
     res.status(500).json({ error: 'Erro ao buscar DAU' });
@@ -69,8 +69,8 @@ router.get('/analytics/dau', async (req, res) => {
  */
 router.get('/analytics/features', async (req, res) => {
   try {
-    const { days = 30 } = req.query;
-    const usage = await analytics.getFeatureUsage(parseInt(days));
+    const days = Math.min(Math.max(parseInt(req.query.days) || 30, 1), 365);
+    const usage = await analytics.getFeatureUsage(days);
     res.json(usage);
   } catch (error) {
     res.status(500).json({ error: 'Erro ao buscar feature usage' });

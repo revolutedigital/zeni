@@ -463,44 +463,54 @@ router.post('/', upload.single('image'), async (req, res) => {
             txDate = new Date().toISOString().split('T')[0];
           }
 
-          // Salvar transação principal
-          await pool.query(`
-            INSERT INTO transactions (user_id, amount, description, date, type, category_id, source, paid)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-          `, [
-            req.userId,
-            parsed.transaction.amount,
-            parsed.transaction.description,
-            txDate,
-            parsed.transaction.type,
-            categoryId,
-            hasImage ? 'photo' : 'text',
-            parsed.transaction.paid !== undefined ? parsed.transaction.paid : true
-          ]);
+          // Salvar transação (com DB transaction para recorrentes)
+          const client = await pool.connect();
+          try {
+            await client.query('BEGIN');
+            await client.query(`
+              INSERT INTO transactions (user_id, amount, description, date, type, category_id, source, paid)
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            `, [
+              req.userId,
+              parsed.transaction.amount,
+              parsed.transaction.description,
+              txDate,
+              parsed.transaction.type,
+              categoryId,
+              hasImage ? 'photo' : 'text',
+              parsed.transaction.paid !== undefined ? parsed.transaction.paid : true
+            ]);
 
-          // Se é recorrente, criar transações para os próximos 11 meses
-          if (parsed.transaction.recurrent || parsed.recurrent) {
-            const baseDate = new Date(txDate);
-            for (let i = 1; i <= 11; i++) {
-              const futureDate = new Date(baseDate);
-              futureDate.setMonth(futureDate.getMonth() + i);
-              const futureDateStr = futureDate.toISOString().split('T')[0];
+            // Se é recorrente, criar transações para os próximos 11 meses
+            if (parsed.transaction.recurrent || parsed.recurrent) {
+              const baseDate = new Date(txDate);
+              for (let i = 1; i <= 11; i++) {
+                const futureDate = new Date(baseDate);
+                futureDate.setMonth(futureDate.getMonth() + i);
+                const futureDateStr = futureDate.toISOString().split('T')[0];
 
-              await pool.query(`
-                INSERT INTO transactions (user_id, amount, description, date, type, category_id, source, paid)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-              `, [
-                req.userId,
-                parsed.transaction.amount,
-                parsed.transaction.description,
-                futureDateStr,
-                parsed.transaction.type,
-                categoryId,
-                hasImage ? 'photo' : 'text',
-                false // Futuras ficam como pendentes
-              ]);
+                await client.query(`
+                  INSERT INTO transactions (user_id, amount, description, date, type, category_id, source, paid)
+                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                `, [
+                  req.userId,
+                  parsed.transaction.amount,
+                  parsed.transaction.description,
+                  futureDateStr,
+                  parsed.transaction.type,
+                  categoryId,
+                  hasImage ? 'photo' : 'text',
+                  false
+                ]);
+              }
+              logger.info(`[Chat] ✅ Transação recorrente criada: 12 meses de R$${parsed.transaction.amount}`);
             }
-            logger.info(`[Chat] ✅ Transação recorrente criada: 12 meses de R$${parsed.transaction.amount}`);
+            await client.query('COMMIT');
+          } catch (dbErr) {
+            await client.query('ROLLBACK');
+            throw dbErr;
+          } finally {
+            client.release();
           }
 
           // Substituir resposta JSON pela mensagem de confirmação amigável
@@ -662,7 +672,7 @@ router.post('/', upload.single('image'), async (req, res) => {
 // Histórico de chat
 router.get('/history', async (req, res) => {
   try {
-    const { limit = 50 } = req.query;
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 200);
 
     const result = await pool.query(`
       SELECT * FROM chat_history

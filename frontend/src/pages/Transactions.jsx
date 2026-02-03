@@ -99,7 +99,7 @@ export default function Transactions() {
   async function togglePaid(id, currentPaid) {
     try {
       const token = localStorage.getItem('zeni_token')
-      await fetch(`${API_URL}/transactions/${id}/paid`, {
+      const res = await fetch(`${API_URL}/transactions/${id}/paid`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -107,7 +107,7 @@ export default function Transactions() {
         },
         body: JSON.stringify({ paid: !currentPaid })
       })
-      // Atualizar estado local
+      if (!res.ok) throw new Error('Falha ao atualizar status')
       setTransactions(prev =>
         prev.map(t => t.id === id ? { ...t, paid: !currentPaid } : t)
       )

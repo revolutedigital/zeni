@@ -82,7 +82,7 @@ export default function Budgets() {
 
     try {
       const token = localStorage.getItem('zeni_token')
-      await fetch(`${API_URL}/budgets`, {
+      const res = await fetch(`${API_URL}/budgets`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -95,6 +95,7 @@ export default function Budgets() {
           year
         })
       })
+      if (!res.ok) throw new Error('Falha ao salvar orçamento')
       setShowModal(false)
       setSelectedCategory('')
       setAmount('')
@@ -109,7 +110,7 @@ export default function Budgets() {
 
     try {
       const token = localStorage.getItem('zeni_token')
-      await fetch(`${API_URL}/budgets`, {
+      const res = await fetch(`${API_URL}/budgets`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -122,6 +123,7 @@ export default function Budgets() {
           year
         })
       })
+      if (!res.ok) throw new Error('Falha ao atualizar orçamento')
       setEditingId(null)
       setEditAmount('')
       loadData()
@@ -135,12 +137,13 @@ export default function Budgets() {
 
     try {
       const token = localStorage.getItem('zeni_token')
-      await fetch(`${API_URL}/budgets/${budgetId}`, {
+      const res = await fetch(`${API_URL}/budgets/${budgetId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`
         }
       })
+      if (!res.ok) throw new Error('Falha ao deletar orçamento')
       loadData()
     } catch (error) {
       console.error('Erro ao deletar:', error)

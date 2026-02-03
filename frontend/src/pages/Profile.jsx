@@ -106,6 +106,11 @@ export default function Profile() {
       return
     }
 
+    if (file.size > 10 * 1024 * 1024) {
+      setError('Imagem muito grande (máx 10MB)')
+      return
+    }
+
     try {
       const resized = await resizeImage(file, 200)
       setAvatar(resized)
