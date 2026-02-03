@@ -192,7 +192,7 @@ export const ZeniFloatingBubble = ({
 
         {/* Mini Zeni */}
         <div className="absolute -bottom-4 right-4">
-          <ZeniMascot variant="icon" size="sm" animated animation="breathe" />
+          <ZeniMascot variant="icon" size="md" animated animation="breathe" />
         </div>
       </div>
     </div>

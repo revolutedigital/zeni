@@ -49,13 +49,13 @@ const ZeniMascot = ({
   };
 
   const sizes = {
-    xs: 'w-6 h-6',      // 24px
-    sm: 'w-8 h-8',      // 32px
-    md: 'w-12 h-12',    // 48px
-    lg: 'w-16 h-16',    // 64px
-    xl: 'w-24 h-24',    // 96px
-    '2xl': 'w-32 h-32', // 128px
-    full: 'w-48 h-48'   // 192px
+    xs: 'w-8 h-8',      // 32px
+    sm: 'w-10 h-10',    // 40px
+    md: 'w-16 h-16',    // 64px
+    lg: 'w-20 h-20',    // 80px
+    xl: 'w-32 h-32',    // 128px
+    '2xl': 'w-40 h-40', // 160px
+    full: 'w-56 h-56'   // 224px
   };
 
   // Motion-First 2026 - Animações disponíveis

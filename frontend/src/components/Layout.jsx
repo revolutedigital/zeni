@@ -39,7 +39,7 @@ export default function Layout({ children, user, onLogout }) {
             aria-label="Zeni - Ir para chat"
           >
             <div className="transition-transform duration-200 group-hover:scale-110">
-              <ZeniMascot variant="icon" size="sm" animated animation="breathe" />
+              <ZeniMascot variant="icon" size="md" animated animation="breathe" />
             </div>
             <span className="text-xl font-bold gradient-primary-text">Zeni</span>
           </Link>
@@ -97,12 +97,12 @@ export default function Layout({ children, user, onLogout }) {
                   aria-current={isActive ? 'page' : undefined}
                 >
                   <div className={`
-                    w-14 h-14 rounded-full flex items-center justify-center
+                    w-16 h-16 rounded-full flex items-center justify-center overflow-hidden
                     gradient-primary shadow-glow
                     ${isActive ? 'shadow-glow-lg' : ''}
                     transition-all duration-200
                   `}>
-                    <ZeniMascot variant="icon" size="sm" />
+                    <ZeniMascot variant="icon" size="md" />
                   </div>
                   <span className={`text-xs font-medium ${isActive ? 'text-zeni-primary' : 'text-zeni-muted'}`}>
                     {label}

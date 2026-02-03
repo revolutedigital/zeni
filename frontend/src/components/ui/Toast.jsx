@@ -121,7 +121,7 @@ function Toast({ message, type, withMascot, onClose }) {
       role="alert"
     >
       {withMascot ? (
-        <ZeniMascot variant={mascotVariant} size="sm" />
+        <ZeniMascot variant={mascotVariant} size="md" />
       ) : (
         <Icon size={20} className={textColor} aria-hidden="true" />
       )}
