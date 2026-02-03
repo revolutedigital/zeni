@@ -564,6 +564,7 @@ export default function Onboarding() {
       const res = await fetch(`${API_URL}/onboarding/suggested-budgets`, {
         headers: { Authorization: `Bearer ${token}` }
       })
+      if (!res.ok) throw new Error('Falha ao carregar sugestões')
       const result = await res.json()
       setSuggestions(result.suggestions || [])
       updateData({

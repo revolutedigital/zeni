@@ -19,7 +19,17 @@ import { prepareDetectiveContext } from '../services/patternAnalyzer.js';
 import { prepareDebtContext } from '../services/debtAnalyzer.js';
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Apenas imagens são permitidas'), false);
+    }
+  }
+});
 
 router.use(authMiddleware);
 
@@ -448,7 +458,7 @@ router.post('/', upload.single('image'), async (req, res) => {
             'SELECT id FROM categories WHERE name ILIKE $1 LIMIT 1',
             [parsed.transaction.category]
           );
-          const categoryId = catResult.rows[0]?.id;
+          const categoryId = catResult.rows[0]?.id || null;
 
           // Validar amount
           const amount = parseFloat(parsed.transaction.amount);

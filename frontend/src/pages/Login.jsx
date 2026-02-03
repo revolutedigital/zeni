@@ -23,6 +23,7 @@ export default function Login() {
       } else {
         result = await login(email, password)
       }
+      if (!result?.user || !result?.token) throw new Error('Resposta inválida do servidor')
       authLogin(result.user, result.token)
     } catch (err) {
       setError(err.message)

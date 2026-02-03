@@ -162,6 +162,7 @@ function CreateGoalModal({ show, onClose, onCreated }) {
         })
       })
 
+      if (!res.ok) throw new Error('Falha ao criar objetivo')
       const result = await res.json()
 
       if (result.success) {

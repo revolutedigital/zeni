@@ -8,6 +8,17 @@
 import pool from '../db/connection.js';
 import { logger } from '../services/logger.js';
 
+// Whitelist de nomes válidos para ORDER BY e colunas
+const SAFE_IDENTIFIER = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+const SAFE_ORDER = /^(ASC|DESC)$/i;
+
+function sanitizeIdentifier(name) {
+  if (!SAFE_IDENTIFIER.test(name)) {
+    throw new Error(`Invalid identifier: ${name}`);
+  }
+  return name;
+}
+
 export class BaseRepository {
   constructor(tableName) {
     this.tableName = tableName;
@@ -34,10 +45,13 @@ export class BaseRepository {
   async findByUserId(userId, options = {}) {
     const { orderBy = 'created_at', order = 'DESC', limit = 100, offset = 0 } = options;
 
+    const safeOrderBy = sanitizeIdentifier(orderBy);
+    const safeOrder = SAFE_ORDER.test(order) ? order.toUpperCase() : 'DESC';
+
     const query = `
       SELECT * FROM ${this.tableName}
       WHERE user_id = $1
-      ORDER BY ${orderBy} ${order}
+      ORDER BY ${safeOrderBy} ${safeOrder}
       LIMIT $2 OFFSET $3
     `;
 
@@ -49,7 +63,7 @@ export class BaseRepository {
    * Cria um novo registro
    */
   async create(data) {
-    const columns = Object.keys(data);
+    const columns = Object.keys(data).map(sanitizeIdentifier);
     const values = Object.values(data);
     const placeholders = columns.map((_, i) => `$${i + 1}`);
 
@@ -68,7 +82,7 @@ export class BaseRepository {
    * Atualiza um registro
    */
   async update(id, userId, data) {
-    const columns = Object.keys(data);
+    const columns = Object.keys(data).map(sanitizeIdentifier);
     const values = Object.values(data);
 
     if (columns.length === 0) {
@@ -114,7 +128,7 @@ export class BaseRepository {
     let paramIndex = 2;
 
     for (const [column, value] of Object.entries(conditions)) {
-      query += ` AND ${column} = $${paramIndex}`;
+      query += ` AND ${sanitizeIdentifier(column)} = $${paramIndex}`;
       params.push(value);
       paramIndex++;
     }

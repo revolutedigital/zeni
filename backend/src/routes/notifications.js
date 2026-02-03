@@ -43,12 +43,12 @@ router.post('/subscribe', async (req, res) => {
     const saved = await saveSubscription(req.userId, subscription);
 
     if (saved) {
-      // Enviar notificação de boas-vindas
-      await sendNotification(req.userId, {
+      // Enviar notificação de boas-vindas (não bloqueia resposta)
+      sendNotification(req.userId, {
         title: '🎉 Notificações Ativadas!',
         body: 'Você receberá alertas de orçamento e lembretes de contas.',
         tag: 'welcome'
-      });
+      }).catch(err => logger.warn('[Notifications] Welcome notification failed:', err.message));
 
       res.json({ success: true, message: 'Push notifications ativadas!' });
     } else {

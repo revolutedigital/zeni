@@ -164,8 +164,8 @@ async function executeWeeklyInsight(action) {
     LIMIT 1
   `, [userId]);
 
-  const expenses = parseFloat(weekData.rows[0]?.total_expenses || 0);
-  const income = parseFloat(weekData.rows[0]?.total_income || 0);
+  const expenses = parseFloat(weekData.rows[0]?.total_expenses) || 0;
+  const income = parseFloat(weekData.rows[0]?.total_income) || 0;
   const savings = income - expenses;
   const category = topCategory.rows[0]?.name || 'N/A';
 

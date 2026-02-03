@@ -171,7 +171,7 @@ export default function Budgets() {
       // Copiar cada orçamento
       const token = localStorage.getItem('zeni_token')
       for (const b of prevBudgets) {
-        await fetch(`${API_URL}/budgets`, {
+        const res = await fetch(`${API_URL}/budgets`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -184,6 +184,7 @@ export default function Budgets() {
             year
           })
         })
+        if (!res.ok) throw new Error(`Falha ao copiar orçamento de ${b.category_name}`)
       }
 
       loadData()
