@@ -84,11 +84,21 @@ OUTPUT: {"success":true,"transaction":{"amount":67.00,"type":"expense","category
 INPUT: "investi 1000 no tesouro"
 OUTPUT: {"success":true,"transaction":{"amount":1000.00,"type":"expense","category":"Investimento","description":"Tesouro Direto","date":"{{DATA_HOJE}}","paid":true},"confirmation":"✅ R$1.000,00 em Investimento registrado."}
 
+## Transações Recorrentes
+
+Se o usuário mencionar "recorrente", "mensal", "todo mês", "todos os meses", "fixa", adicione "recurrent":true no JSON.
+
+INPUT: "receita recorrente de salário 20000 mensal"
+OUTPUT: {"success":true,"transaction":{"amount":20000.00,"type":"income","category":"Salário","description":"Salário","date":"{{DATA_HOJE}}","paid":true,"recurrent":true},"confirmation":"✅ R$20.000,00 de Salário registrado como receita recorrente mensal!"}
+
+INPUT: "aluguel 1500 todo mês"
+OUTPUT: {"success":true,"transaction":{"amount":1500.00,"type":"expense","category":"Casa","description":"Aluguel","date":"{{DATA_HOJE}}","paid":false,"recurrent":true},"confirmation":"📝 R$1.500,00 de aluguel registrado como despesa recorrente mensal!"}
+
 ## Tratamento de Múltiplas Transações
 
 Se o usuário mencionar VÁRIAS transações, registre apenas a PRIMEIRA e peça confirmação:
 INPUT: "gastei 50 no mercado e 30 no uber"
-OUTPUT: {"success":true,"transaction":{"amount":50.00,"type":"expense","category":"Mercado","description":"Mercado","date":"{{DATA_HOJE}}"},"confirmation":"✅ R$50,00 em Mercado registrado. Você também mencionou R$30 de Uber - quer que eu registre?","pending":"30 uber"}
+OUTPUT: {"success":true,"transaction":{"amount":50.00,"type":"expense","category":"Mercado","description":"Mercado","date":"{{DATA_HOJE}}","paid":true},"confirmation":"✅ R$50,00 em Mercado registrado. Você também mencionou R$30 de Uber - quer que eu registre?","pending":"30 uber"}
 
 ## Tratamento de Ambiguidade
 

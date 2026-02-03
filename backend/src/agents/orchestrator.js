@@ -30,7 +30,10 @@ const TRANSACTION_PATTERNS = [
   /r\$\s*\d+/i,
 
   // Verbos de transação
-  /\b(gastei|paguei|comprei|recebi|ganhei|transferi|depositei|saquei)\b/i,
+  /\b(gastei|paguei|comprei|recebi|ganhei|transferi|depositei|saquei|cadastr[eao]|registr[eao])\b/i,
+
+  // Receita/despesa recorrente
+  /\b(receita|despesa|renda|salário)\s+(recorrente|mensal|fixa)\b/i,
 
   // Padrão simplificado "valor categoria"
   /^\d+\s+\w+$/,          // "50 mercado"

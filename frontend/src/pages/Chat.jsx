@@ -447,7 +447,7 @@ export default function Chat() {
                 >
                   <ZeniMascot
                     variant={agentConfig?.zeniVariant || 'default'}
-                    size="sm"
+                    size="lg"
                     animated
                     animation="breathe"
                   />

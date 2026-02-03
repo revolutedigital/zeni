@@ -440,7 +440,8 @@ router.post('/', upload.single('image'), async (req, res) => {
     // Se foi registro, tentar parsear e salvar transação
     if (agent === 'registrar' || agent === 'registrar_vision') {
       try {
-        const parsed = JSON.parse(response);
+        // Tentar extrair JSON robusto (suporta markdown code blocks, texto antes/depois)
+        const parsed = extractJSON(response) || JSON.parse(response);
         if (parsed.success && parsed.transaction) {
           // Buscar category_id
           const catResult = await pool.query(
@@ -449,7 +450,13 @@ router.post('/', upload.single('image'), async (req, res) => {
           );
           const categoryId = catResult.rows[0]?.id;
 
-          // Salvar transação
+          // Resolver data - substituir placeholders não resolvidos
+          let txDate = parsed.transaction.date || new Date().toISOString().split('T')[0];
+          if (txDate.includes('DATA') || txDate.includes('{')) {
+            txDate = new Date().toISOString().split('T')[0];
+          }
+
+          // Salvar transação principal
           await pool.query(`
             INSERT INTO transactions (user_id, amount, description, date, type, category_id, source, paid)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -457,24 +464,60 @@ router.post('/', upload.single('image'), async (req, res) => {
             req.userId,
             parsed.transaction.amount,
             parsed.transaction.description,
-            parsed.transaction.date,
+            txDate,
             parsed.transaction.type,
             categoryId,
             hasImage ? 'photo' : 'text',
             parsed.transaction.paid !== undefined ? parsed.transaction.paid : true
           ]);
 
+          // Se é recorrente, criar transações para os próximos 11 meses
+          if (parsed.transaction.recurrent || parsed.recurrent) {
+            const baseDate = new Date(txDate);
+            for (let i = 1; i <= 11; i++) {
+              const futureDate = new Date(baseDate);
+              futureDate.setMonth(futureDate.getMonth() + i);
+              const futureDateStr = futureDate.toISOString().split('T')[0];
+
+              await pool.query(`
+                INSERT INTO transactions (user_id, amount, description, date, type, category_id, source, paid)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+              `, [
+                req.userId,
+                parsed.transaction.amount,
+                parsed.transaction.description,
+                futureDateStr,
+                parsed.transaction.type,
+                categoryId,
+                hasImage ? 'photo' : 'text',
+                false // Futuras ficam como pendentes
+              ]);
+            }
+            logger.info(`[Chat] ✅ Transação recorrente criada: 12 meses de R$${parsed.transaction.amount}`);
+          }
+
           // Substituir resposta JSON pela mensagem de confirmação amigável
-          response = parsed.confirmation || `✅ Transação de R$${parsed.transaction.amount.toFixed(2)} registrada!`;
+          const recurrentMsg = (parsed.transaction.recurrent || parsed.recurrent)
+            ? ' (recorrente por 12 meses)'
+            : '';
+          response = parsed.confirmation || `✅ Transação de R$${parsed.transaction.amount.toFixed(2)} registrada${recurrentMsg}!`;
 
           // INTEGRAÇÃO: Personality - adicionar reação para transação registrada
           const reaction = getFinancialReaction('firstTransaction');
           if (reaction && Math.random() > 0.7) { // 30% de chance de adicionar reação
             response += `\n\n${reaction.message}`;
           }
+        } else if (parsed.success === false && parsed.error) {
+          // Resposta de erro estruturada - mostrar a mensagem amigável
+          response = parsed.error;
         }
       } catch (e) {
-        // Não era JSON válido, só retorna a resposta como está
+        // Se não conseguiu parsear JSON, tentar extrair a mensagem de confirmação do texto
+        const confirmMatch = response.match(/✅[^"}\n]+/);
+        if (confirmMatch) {
+          response = confirmMatch[0];
+        }
+        logger.warn('[Chat] Falha ao parsear resposta do registrador:', e.message);
       }
     }
 
