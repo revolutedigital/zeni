@@ -738,7 +738,8 @@ router.get('/history', async (req, res) => {
     limit = Math.min(Math.max(limit, 1), 200);
 
     const result = await pool.query(`
-      SELECT * FROM chat_history
+      SELECT id, user_id, role, content, agent, created_at
+      FROM chat_history
       WHERE user_id = $1
       ORDER BY created_at DESC
       LIMIT $2

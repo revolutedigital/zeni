@@ -43,7 +43,26 @@ app.use(helmet({
   },
   crossOriginEmbedderPolicy: false, // Necessário para algumas APIs
   frameguard: { action: 'deny' }, // X-Frame-Options: DENY
+  // HSTS - força HTTPS (max-age: 1 ano, includeSubDomains, preload)
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  },
+  // Remove X-Powered-By header (oculta tecnologia do servidor)
+  hidePoweredBy: true,
+  // Referrer-Policy - controla informações enviadas no header Referer
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 }));
+
+// ===========================================
+// SEGURANÇA: Permissions-Policy Header
+// ===========================================
+app.use((req, res, next) => {
+  // Restringe APIs sensíveis do navegador
+  res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=(), payment=()');
+  next();
+});
 
 // ===========================================
 // SEGURANÇA: CORS Restritivo

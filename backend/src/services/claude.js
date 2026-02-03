@@ -18,6 +18,9 @@ const RETRY_CONFIG = {
   maxDelayMs: 10000,
 };
 
+// Timeout para chamadas da API Claude (30 segundos)
+const API_TIMEOUT_MS = parseInt(process.env.CLAUDE_API_TIMEOUT_MS, 10) || 30000;
+
 const MODEL_CONFIG = {
   fast: 'claude-3-haiku-20240307',
   balanced: 'claude-sonnet-4-20250514',
@@ -111,6 +114,30 @@ function calculateBackoffDelay(attempt) {
 }
 
 /**
+ * Executa uma promise com timeout
+ * @param {Promise} promise - Promise a executar
+ * @param {number} timeoutMs - Timeout em milissegundos
+ * @returns {Promise} - Promise com timeout
+ */
+async function withTimeout(promise, timeoutMs = API_TIMEOUT_MS) {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`Claude API timeout after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  try {
+    const result = await Promise.race([promise, timeoutPromise]);
+    clearTimeout(timeoutId);
+    return result;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+}
+
+/**
  * Verifica se o erro é retryable
  */
 function isRetryableError(error) {
@@ -178,12 +205,15 @@ export async function callClaude(systemPrompt, userMessage, model = 'claude-3-ha
   ];
 
   const apiCall = async () => {
-    const response = await anthropic.messages.create({
-      model,
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages,
-    });
+    const response = await withTimeout(
+      anthropic.messages.create({
+        model,
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages,
+      }),
+      API_TIMEOUT_MS
+    );
 
     return response.content[0].text;
   };
@@ -211,30 +241,33 @@ export async function callClaudeWithAutoModel(agent, systemPrompt, userMessage, 
  */
 export async function callClaudeVision(systemPrompt, imageBase64, mimeType = 'image/jpeg') {
   const apiCall = async () => {
-    const response = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: mimeType,
-                data: imageBase64,
+    const response = await withTimeout(
+      anthropic.messages.create({
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: mimeType,
+                  data: imageBase64,
+                },
               },
-            },
-            {
-              type: 'text',
-              text: 'Extraia os dados desta imagem de comprovante financeiro.',
-            },
-          ],
-        },
-      ],
-    });
+              {
+                type: 'text',
+                text: 'Extraia os dados desta imagem de comprovante financeiro.',
+              },
+            ],
+          },
+        ],
+      }),
+      API_TIMEOUT_MS
+    );
 
     return response.content[0].text;
   };
