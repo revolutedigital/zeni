@@ -8,7 +8,11 @@ const { Pool } = pg;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  // SSL em produção: rejectUnauthorized deve ser true para segurança
+  // Use false apenas se o provedor de DB não fornecer certificado válido
+  ssl: process.env.NODE_ENV === 'production'
+    ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' }
+    : false
 });
 
 // Testar conexão

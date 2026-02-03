@@ -210,11 +210,24 @@ export async function getGoalsSummary() {
 
 // Alerts/Notifications
 export async function getAlerts() {
-  const res = await fetch(`${API_URL}/alerts`, {
-    headers: getHeaders()
-  })
-  if (!res.ok) return { alerts: [] }
-  return res.json()
+  try {
+    const res = await fetch(`${API_URL}/alerts`, {
+      headers: getHeaders()
+    })
+    if (!res.ok) {
+      // Log para debug, mas retorna vazio para não quebrar UI
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[API] getAlerts failed:', res.status)
+      }
+      return { alerts: [], error: true }
+    }
+    return res.json()
+  } catch (err) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[API] getAlerts error:', err.message)
+    }
+    return { alerts: [], error: true }
+  }
 }
 
 export async function markAlertAsRead(alertId) {
@@ -226,9 +239,21 @@ export async function markAlertAsRead(alertId) {
 }
 
 export async function getUserStats() {
-  const res = await fetch(`${API_URL}/auth/stats`, {
-    headers: getHeaders()
-  })
-  if (!res.ok) return { streak: 0, achievements: [], xp: 0, level: 1 }
-  return res.json()
+  try {
+    const res = await fetch(`${API_URL}/auth/stats`, {
+      headers: getHeaders()
+    })
+    if (!res.ok) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[API] getUserStats failed:', res.status)
+      }
+      return { streak: 0, achievements: [], xp: 0, level: 1, error: true }
+    }
+    return res.json()
+  } catch (err) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[API] getUserStats error:', err.message)
+    }
+    return { streak: 0, achievements: [], xp: 0, level: 1, error: true }
+  }
 }

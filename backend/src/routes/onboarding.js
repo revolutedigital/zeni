@@ -236,17 +236,31 @@ router.post('/step/5', async (req, res) => {
     const { createGoal, goal } = req.body;
 
     if (createGoal && goal) {
+      // Validação de entrada
+      const name = typeof goal.name === 'string' ? goal.name.trim() : '';
+      const targetAmount = parseFloat(goal.targetAmount);
+      const priority = ['low', 'medium', 'high'].includes(goal.priority) ? goal.priority : 'medium';
+      const category = ['savings', 'travel', 'purchase', 'debt', 'investment', 'education', 'other']
+        .includes(goal.category) ? goal.category : 'savings';
+
+      if (!name || name.length > 200) {
+        return res.status(400).json({ error: 'Nome do objetivo inválido' });
+      }
+      if (isNaN(targetAmount) || targetAmount <= 0 || targetAmount > 999999999) {
+        return res.status(400).json({ error: 'Valor alvo inválido' });
+      }
+
       // Criar objetivo inicial
       await pool.query(`
         INSERT INTO goals (user_id, name, target_amount, deadline, priority, category)
         VALUES ($1, $2, $3, $4, $5, $6)
       `, [
         req.userId,
-        goal.name,
-        goal.targetAmount,
+        name,
+        targetAmount,
         goal.deadline || null,
-        goal.priority || 'medium',
-        goal.category || 'savings'
+        priority,
+        category
       ]);
     }
 

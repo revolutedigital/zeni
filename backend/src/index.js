@@ -56,8 +56,15 @@ const allowedOrigins = isProduction
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Permitir requests sem origin (mobile apps, Postman, etc)
-    if (!origin) return callback(null, true);
+    // Em produção, bloquear requests sem origin para evitar CSRF
+    // Em desenvolvimento, permitir para facilitar testes
+    if (!origin) {
+      if (isProduction) {
+        logger.warn('CORS blocked request without origin in production');
+        return callback(new Error('Origin header required'));
+      }
+      return callback(null, true);
+    }
 
     if (allowedOrigins.includes(origin)) {
       callback(null, true);

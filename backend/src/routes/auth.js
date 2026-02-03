@@ -78,6 +78,12 @@ router.post('/login', validateBody(loginSchema), async (req, res) => {
 
 // Middleware de autenticação
 export function authMiddleware(req, res, next) {
+  // Verificar se JWT_SECRET está configurado (crítico)
+  if (!process.env.JWT_SECRET) {
+    logger.error('CRITICAL: JWT_SECRET not configured!');
+    return res.status(500).json({ error: 'Erro de configuração do servidor' });
+  }
+
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {

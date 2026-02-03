@@ -139,16 +139,26 @@ export async function sendNotification(userId, notification) {
 
 /**
  * Envia notificação para múltiplos usuários
+ * Usa Promise.allSettled para não falhar se uma notificação individual falhar
  */
 export async function sendBulkNotification(userIds, notification) {
-  const results = await Promise.all(
+  const results = await Promise.allSettled(
     userIds.map(userId => sendNotification(userId, notification))
   );
 
-  return {
-    totalSent: results.reduce((sum, r) => sum + r.sent, 0),
-    totalFailed: results.reduce((sum, r) => sum + r.failed, 0)
-  };
+  let totalSent = 0;
+  let totalFailed = 0;
+
+  for (const result of results) {
+    if (result.status === 'fulfilled') {
+      totalSent += result.value.sent || 0;
+      totalFailed += result.value.failed || 0;
+    } else {
+      totalFailed++;
+    }
+  }
+
+  return { totalSent, totalFailed };
 }
 
 /**
