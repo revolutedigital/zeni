@@ -33,6 +33,11 @@ const upload = multer({
 
 router.use(authMiddleware);
 
+// Helper: Escapar caracteres especiais de regex
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // Helper: Extrair JSON robusto de respostas do Claude
 function extractJSON(text, actionType = null) {
   if (!text) return null;
@@ -49,7 +54,9 @@ function extractJSON(text, actionType = null) {
 
   // Se procurando uma ação específica, buscar o objeto com essa ação
   if (actionType) {
-    const regex = new RegExp(`\\{[\\s\\S]*?"action"[\\s\\S]*?"${actionType}"[\\s\\S]*?\\}`, 'm');
+    // Escapar actionType para prevenir ReDoS
+    const safeActionType = escapeRegex(actionType);
+    const regex = new RegExp(`\\{[\\s\\S]*?"action"[\\s\\S]*?"${safeActionType}"[\\s\\S]*?\\}`, 'm');
     const match = cleaned.match(regex);
     if (match) {
       cleaned = match[0];
@@ -674,8 +681,11 @@ router.post('/', upload.single('image'), async (req, res) => {
     });
   } catch (error) {
     logger.error('Erro no chat:', error);
-    console.error('DETALHE DO ERRO:', error.message);
-    console.error('STACK:', error.stack);
+    // Stack trace só em desenvolvimento (previne exposição em produção)
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('DETALHE DO ERRO:', error.message);
+      console.error('STACK:', error.stack);
+    }
     res.status(500).json({ error: 'Erro interno' });
   }
 });

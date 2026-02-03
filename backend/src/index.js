@@ -35,12 +35,14 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"], // TODO: Remover unsafe-inline quando possível
       scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "blob:"],
+      frameAncestors: ["'none'"], // Previne clickjacking
     },
   },
   crossOriginEmbedderPolicy: false, // Necessário para algumas APIs
+  frameguard: { action: 'deny' }, // X-Frame-Options: DENY
 }));
 
 // ===========================================
@@ -92,14 +94,15 @@ const generalLimiter = rateLimit({
   validate: { xForwardedForHeader: false },
 });
 
-// Rate limit para auth: 10 tentativas por minuto (proteção contra brute force)
+// Rate limit para auth: 5 tentativas por 5 minutos (proteção contra brute force)
 const authLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 10,
-  message: { error: 'Muitas tentativas de login. Aguarde 1 minuto.' },
+  windowMs: 5 * 60 * 1000, // 5 minutos
+  max: 5, // Máximo 5 tentativas
+  message: { error: 'Muitas tentativas de login. Aguarde 5 minutos.' },
   standardHeaders: true,
   legacyHeaders: false,
   validate: { xForwardedForHeader: false },
+  skipSuccessfulRequests: true, // Não conta logins bem-sucedidos
 });
 
 // Rate limit para chat/IA: 30 requests por minuto (evita abuso de API Claude)
