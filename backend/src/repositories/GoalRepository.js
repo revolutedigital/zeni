@@ -152,97 +152,125 @@ export class GoalRepository extends BaseRepository {
   }
 
   /**
-   * Adiciona contribuição ao objetivo
+   * Adiciona contribuição ao objetivo (com transação para evitar race condition)
    */
   async addContribution(goalId, userId, data) {
     const { amount, date, source, note } = data;
+    const client = await this.pool.connect();
 
-    // Verificar se objetivo existe e pertence ao usuário
-    const goalResult = await this.pool.query(
-      'SELECT id, target_amount, current_amount FROM goals WHERE id = $1 AND user_id = $2',
-      [goalId, userId]
-    );
+    try {
+      await client.query('BEGIN');
 
-    if (goalResult.rows.length === 0) {
-      return null;
+      // Verificar se objetivo existe e pertence ao usuário (com lock)
+      const goalResult = await client.query(
+        'SELECT id, target_amount, current_amount FROM goals WHERE id = $1 AND user_id = $2 FOR UPDATE',
+        [goalId, userId]
+      );
+
+      if (goalResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return null;
+      }
+
+      // Inserir contribuição (trigger atualiza current_amount automaticamente)
+      const contributionResult = await client.query(
+        `
+        INSERT INTO goal_contributions (goal_id, user_id, amount, date, source, note)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING *
+      `,
+        [goalId, userId, amount, date || new Date().toISOString().split('T')[0], source || 'manual', note || null]
+      );
+
+      const contribution = contributionResult.rows[0];
+
+      // Buscar valor atualizado
+      const updatedGoal = await client.query('SELECT current_amount, target_amount FROM goals WHERE id = $1', [goalId]);
+
+      const newCurrentAmount = parseFloat(updatedGoal.rows[0]?.current_amount) || 0;
+      const targetAmount = parseFloat(updatedGoal.rows[0]?.target_amount) || 1;
+      const progressPercent = Math.round((newCurrentAmount / targetAmount) * 100 * 10) / 10;
+
+      // Verificar se atingiu a meta
+      const completed = newCurrentAmount >= targetAmount;
+      if (completed) {
+        await client.query(`UPDATE goals SET status = 'completed', updated_at = NOW() WHERE id = $1`, [goalId]);
+      }
+
+      await client.query('COMMIT');
+
+      return {
+        contribution: {
+          id: contribution.id,
+          amount: parseFloat(contribution.amount),
+          date: contribution.date,
+          source: contribution.source,
+          note: contribution.note,
+        },
+        goalUpdate: {
+          currentAmount: newCurrentAmount,
+          progressPercent,
+          completed,
+        },
+      };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
     }
-
-    // Inserir contribuição (trigger atualiza current_amount automaticamente)
-    const contributionResult = await this.pool.query(
-      `
-      INSERT INTO goal_contributions (goal_id, user_id, amount, date, source, note)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *
-    `,
-      [goalId, userId, amount, date || new Date().toISOString().split('T')[0], source || 'manual', note || null]
-    );
-
-    const contribution = contributionResult.rows[0];
-
-    // Buscar valor atualizado
-    const updatedGoal = await this.pool.query('SELECT current_amount, target_amount FROM goals WHERE id = $1', [goalId]);
-
-    const newCurrentAmount = parseFloat(updatedGoal.rows[0]?.current_amount) || 0;
-    const targetAmount = parseFloat(updatedGoal.rows[0]?.target_amount) || 1;
-    const progressPercent = Math.round((newCurrentAmount / targetAmount) * 100 * 10) / 10;
-
-    // Verificar se atingiu a meta
-    const completed = newCurrentAmount >= targetAmount;
-    if (completed) {
-      await this.pool.query(`UPDATE goals SET status = 'completed', updated_at = NOW() WHERE id = $1`, [goalId]);
-    }
-
-    return {
-      contribution: {
-        id: contribution.id,
-        amount: parseFloat(contribution.amount),
-        date: contribution.date,
-        source: contribution.source,
-        note: contribution.note,
-      },
-      goalUpdate: {
-        currentAmount: newCurrentAmount,
-        progressPercent,
-        completed,
-      },
-    };
   }
 
   /**
-   * Remove uma contribuição
+   * Remove uma contribuição (com transação para evitar race condition)
    */
   async removeContribution(goalId, contributionId, userId) {
-    // Verificar se objetivo pertence ao usuário
-    const goalCheck = await this.pool.query('SELECT id FROM goals WHERE id = $1 AND user_id = $2', [goalId, userId]);
+    const client = await this.pool.connect();
 
-    if (goalCheck.rows.length === 0) {
-      return null;
+    try {
+      await client.query('BEGIN');
+
+      // Verificar se objetivo pertence ao usuário (com lock)
+      const goalCheck = await client.query('SELECT id FROM goals WHERE id = $1 AND user_id = $2 FOR UPDATE', [goalId, userId]);
+
+      if (goalCheck.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return null;
+      }
+
+      // Remover contribuição (trigger atualiza current_amount)
+      const result = await client.query('DELETE FROM goal_contributions WHERE id = $1 AND goal_id = $2 RETURNING id', [
+        contributionId,
+        goalId,
+      ]);
+
+      if (result.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return { found: false };
+      }
+
+      // Buscar valor atualizado
+      const updatedGoal = await client.query('SELECT current_amount, target_amount FROM goals WHERE id = $1', [goalId]);
+
+      const goal = updatedGoal.rows[0];
+      const currentAmount = parseFloat(goal?.current_amount) || 0;
+      const targetAmount = parseFloat(goal?.target_amount) || 1;
+
+      await client.query('COMMIT');
+
+      return {
+        found: true,
+        goalUpdate: {
+          currentAmount,
+          progressPercent: Math.round((currentAmount / targetAmount) * 100 * 10) / 10,
+        },
+      };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
     }
-
-    // Remover contribuição (trigger atualiza current_amount)
-    const result = await this.pool.query('DELETE FROM goal_contributions WHERE id = $1 AND goal_id = $2 RETURNING id', [
-      contributionId,
-      goalId,
-    ]);
-
-    if (result.rows.length === 0) {
-      return { found: false };
-    }
-
-    // Buscar valor atualizado
-    const updatedGoal = await this.pool.query('SELECT current_amount, target_amount FROM goals WHERE id = $1', [goalId]);
-
-    const goal = updatedGoal.rows[0];
-    const currentAmount = parseFloat(goal?.current_amount) || 0;
-    const targetAmount = parseFloat(goal?.target_amount) || 1;
-
-    return {
-      found: true,
-      goalUpdate: {
-        currentAmount,
-        progressPercent: Math.round((currentAmount / targetAmount) * 100 * 10) / 10,
-      },
-    };
   }
 
   /**

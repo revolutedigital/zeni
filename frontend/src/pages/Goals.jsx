@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Target, Plus, X, ChevronRight, Trophy, Clock, AlertTriangle } from 'lucide-react'
 
@@ -129,6 +129,14 @@ function CreateGoalModal({ show, onClose, onCreated }) {
   const [priority, setPriority] = useState('medium')
   const [loading, setLoading] = useState(false)
   const [analysis, setAnalysis] = useState(null)
+  const closeTimerRef = React.useRef(null)
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
+    }
+  }, [])
 
   const categories = [
     { value: 'savings', label: 'Reserva/Poupança' },
@@ -142,6 +150,13 @@ function CreateGoalModal({ show, onClose, onCreated }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
+
+    const parsedAmount = parseFloat(targetAmount)
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      alert('Por favor, insira um valor alvo válido maior que zero')
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -154,7 +169,7 @@ function CreateGoalModal({ show, onClose, onCreated }) {
         },
         body: JSON.stringify({
           name,
-          targetAmount: parseFloat(targetAmount),
+          targetAmount: parsedAmount,
           deadline: deadline || null,
           category,
           priority,
@@ -168,7 +183,7 @@ function CreateGoalModal({ show, onClose, onCreated }) {
       if (result.success) {
         setAnalysis(result.analysis)
         // Mostrar análise por 3 segundos antes de fechar
-        setTimeout(() => {
+        closeTimerRef.current = setTimeout(() => {
           onCreated()
           resetForm()
         }, 3000)

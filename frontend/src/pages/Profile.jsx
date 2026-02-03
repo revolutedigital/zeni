@@ -44,6 +44,14 @@ export default function Profile() {
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
   const fileInputRef = useRef(null)
+  const savedTimerRef = useRef(null)
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     fetchProfile()
@@ -89,7 +97,7 @@ export default function Profile() {
       const updated = await res.json()
       updateUser({ ...user, name: updated.name, email: updated.email, avatar: updated.avatar })
       setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
+      savedTimerRef.current = setTimeout(() => setSaved(false), 3000)
     } catch (err) {
       setError(err.message)
     } finally {

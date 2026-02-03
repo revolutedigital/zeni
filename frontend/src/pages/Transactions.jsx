@@ -69,9 +69,15 @@ export default function Transactions() {
   async function handleSubmit(e) {
     e.preventDefault()
 
+    const parsedAmount = parseFloat(amount)
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      alert('Por favor, insira um valor válido maior que zero')
+      return
+    }
+
     try {
       await createTransaction({
-        amount: parseFloat(amount),
+        amount: parsedAmount,
         description,
         date,
         type,

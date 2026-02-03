@@ -55,7 +55,7 @@ router.get('/analytics', async (req, res) => {
  */
 router.get('/analytics/dau', async (req, res) => {
   try {
-    const days = Math.min(Math.max(parseInt(req.query.days) || 30, 1), 365);
+    const days = Math.min(Math.max(parseInt(req.query.days, 10) || 30, 1), 365);
     const trend = await analytics.getDAUTrend(days);
     res.json(trend);
   } catch (error) {
@@ -69,7 +69,7 @@ router.get('/analytics/dau', async (req, res) => {
  */
 router.get('/analytics/features', async (req, res) => {
   try {
-    const days = Math.min(Math.max(parseInt(req.query.days) || 30, 1), 365);
+    const days = Math.min(Math.max(parseInt(req.query.days, 10) || 30, 1), 365);
     const usage = await analytics.getFeatureUsage(days);
     res.json(usage);
   } catch (error) {
@@ -83,8 +83,8 @@ router.get('/analytics/features', async (req, res) => {
  */
 router.get('/users', async (req, res) => {
   try {
-    const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 100);
-    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 100);
+    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
 
     const result = await pool.query(`
       SELECT
@@ -108,9 +108,9 @@ router.get('/users', async (req, res) => {
 
     res.json({
       users: result.rows,
-      total: parseInt(countResult.rows[0].count),
-      limit: parseInt(limit),
-      offset: parseInt(offset)
+      total: parseInt(countResult.rows[0].count, 10),
+      limit,
+      offset
     });
   } catch (error) {
     logger.error('[Admin] Users error:', error);

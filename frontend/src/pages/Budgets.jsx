@@ -80,6 +80,12 @@ export default function Budgets() {
   async function handleSave() {
     if (!selectedCategory || !amount) return
 
+    const parsedAmount = parseFloat(amount)
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      alert('Por favor, insira um valor válido maior que zero')
+      return
+    }
+
     try {
       const token = localStorage.getItem('zeni_token')
       const res = await fetch(`${API_URL}/budgets`, {
@@ -90,7 +96,7 @@ export default function Budgets() {
         },
         body: JSON.stringify({
           category_id: selectedCategory,
-          amount: parseFloat(amount),
+          amount: parsedAmount,
           month,
           year
         })
@@ -108,6 +114,12 @@ export default function Budgets() {
   async function handleUpdate(budgetId, categoryId) {
     if (!editAmount) return
 
+    const parsedAmount = parseFloat(editAmount)
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      alert('Por favor, insira um valor válido maior que zero')
+      return
+    }
+
     try {
       const token = localStorage.getItem('zeni_token')
       const res = await fetch(`${API_URL}/budgets`, {
@@ -118,7 +130,7 @@ export default function Budgets() {
         },
         body: JSON.stringify({
           category_id: categoryId,
-          amount: parseFloat(editAmount),
+          amount: parsedAmount,
           month,
           year
         })

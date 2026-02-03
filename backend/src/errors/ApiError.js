@@ -149,13 +149,20 @@ export function errorHandler(err, req, res, _next) {
       }
     }
 
-    // Erro desconhecido - log completo
+    // Erro desconhecido - log completo (sanitizado)
+    const sanitizedBody = req.body ? { ...req.body } : {};
+    delete sanitizedBody.password;
+    delete sanitizedBody.token;
+    delete sanitizedBody.secret;
+    delete sanitizedBody.creditCard;
+    delete sanitizedBody.cardNumber;
+
     logger.error(
       {
         err,
         path: req.path,
         method: req.method,
-        body: req.body,
+        body: sanitizedBody,
         userId: req.userId,
       },
       'Unhandled Error'

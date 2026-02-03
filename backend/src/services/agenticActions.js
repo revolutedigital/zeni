@@ -232,9 +232,9 @@ export async function checkAndScheduleBudgetAlerts(userId) {
   `, [userId]);
 
   for (const row of result.rows) {
-    const spent = parseFloat(row.spent);
-    const budget = parseFloat(row.budget);
-    const percentUsed = Math.round((spent / budget) * 100);
+    const spent = parseFloat(row.spent) || 0;
+    const budget = parseFloat(row.budget) || 1;
+    const percentUsed = budget > 0 ? Math.round((spent / budget) * 100) : 0;
     const isExceeded = spent > budget;
 
     // Verificar se já não tem alerta recente

@@ -53,7 +53,7 @@ export class BudgetRepository extends BaseRepository {
       categoryIcon: row.category_icon,
       spent: parseFloat(row.spent),
       remaining: parseFloat(row.budget) - parseFloat(row.spent),
-      percentUsed: Math.round((parseFloat(row.spent) / parseFloat(row.budget)) * 100),
+      percentUsed: parseFloat(row.budget) > 0 ? Math.round((parseFloat(row.spent) / parseFloat(row.budget)) * 100) : 0,
     }));
   }
 
