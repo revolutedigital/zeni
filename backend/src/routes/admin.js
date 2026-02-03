@@ -83,7 +83,8 @@ router.get('/analytics/features', async (req, res) => {
  */
 router.get('/users', async (req, res) => {
   try {
-    const { limit = 50, offset = 0 } = req.query;
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 100);
+    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
 
     const result = await pool.query(`
       SELECT

@@ -79,12 +79,12 @@ export async function getRetentionCohort(cohortDate, daysAfter) {
       SELECT DISTINCT ae.user_id
       FROM analytics_events ae
       JOIN cohort c ON ae.user_id = c.user_id
-      WHERE DATE(ae.created_at) = DATE($1) + INTERVAL '${daysAfter} days'
+      WHERE DATE(ae.created_at) = DATE($1) + make_interval(days => $2)
     )
     SELECT
       (SELECT COUNT(*) FROM cohort) as cohort_size,
       (SELECT COUNT(*) FROM retained) as retained_count
-  `, [cohortDate]);
+  `, [cohortDate, parseInt(daysAfter) || 7]);
 
   const cohortSize = parseInt(result.rows[0]?.cohort_size || 0);
   const retainedCount = parseInt(result.rows[0]?.retained_count || 0);
@@ -107,11 +107,11 @@ export async function getFeatureUsage(days = 30) {
       COUNT(DISTINCT user_id) as unique_users
     FROM analytics_events
     WHERE event_type = 'chat_message'
-      AND created_at >= NOW() - INTERVAL '${days} days'
+      AND created_at >= NOW() - make_interval(days => $1)
       AND metadata->>'agent' IS NOT NULL
     GROUP BY metadata->>'agent'
     ORDER BY usage_count DESC
-  `);
+  `, [parseInt(days) || 30]);
   return result.rows;
 }
 
@@ -127,8 +127,8 @@ export async function getEngagementMetrics(days = 30) {
       ROUND(COUNT(*)::numeric / NULLIF(COUNT(DISTINCT user_id), 0), 2) as events_per_user,
       ROUND(COUNT(*)::numeric / NULLIF(COUNT(DISTINCT DATE(created_at)), 0), 2) as events_per_day
     FROM analytics_events
-    WHERE created_at >= NOW() - INTERVAL '${days} days'
-  `);
+    WHERE created_at >= NOW() - make_interval(days => $1)
+  `, [parseInt(days) || 30]);
   return result.rows[0];
 }
 
@@ -144,8 +144,8 @@ export async function getTransactionMetrics(days = 30) {
       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as total_income,
       ROUND(AVG(amount), 2) as avg_transaction_amount
     FROM transactions
-    WHERE created_at >= NOW() - INTERVAL '${days} days'
-  `);
+    WHERE created_at >= NOW() - make_interval(days => $1)
+  `, [parseInt(days) || 30]);
   return result.rows[0];
 }
 
@@ -159,10 +159,10 @@ export async function getUserGrowth(days = 30) {
       COUNT(*) as new_users,
       SUM(COUNT(*)) OVER (ORDER BY DATE(created_at)) as cumulative_users
     FROM users
-    WHERE created_at >= NOW() - INTERVAL '${days} days'
+    WHERE created_at >= NOW() - make_interval(days => $1)
     GROUP BY DATE(created_at)
     ORDER BY date
-  `);
+  `, [parseInt(days) || 30]);
   return result.rows;
 }
 
@@ -175,10 +175,10 @@ export async function getDAUTrend(days = 30) {
       DATE(created_at) as date,
       COUNT(DISTINCT user_id) as dau
     FROM analytics_events
-    WHERE created_at >= NOW() - INTERVAL '${days} days'
+    WHERE created_at >= NOW() - make_interval(days => $1)
     GROUP BY DATE(created_at)
     ORDER BY date
-  `);
+  `, [parseInt(days) || 30]);
   return result.rows;
 }
 

@@ -450,6 +450,13 @@ router.post('/', upload.single('image'), async (req, res) => {
           );
           const categoryId = catResult.rows[0]?.id;
 
+          // Validar amount
+          const amount = parseFloat(parsed.transaction.amount);
+          if (!amount || amount <= 0 || amount > 999999999) {
+            throw new Error('Valor inválido para transação');
+          }
+          parsed.transaction.amount = amount;
+
           // Resolver data - substituir placeholders não resolvidos
           let txDate = parsed.transaction.date || new Date().toISOString().split('T')[0];
           if (txDate.includes('DATA') || txDate.includes('{')) {

@@ -267,9 +267,9 @@ router.post('/complete', async (req, res) => {
       UPDATE users
       SET
         onboarding_completed = true,
-        onboarding_profile = COALESCE(onboarding_profile, '{}'::jsonb) || '{"completedAt": "${new Date().toISOString()}"}'::jsonb
+        onboarding_profile = COALESCE(onboarding_profile, '{}'::jsonb) || $2::jsonb
       WHERE id = $1
-    `, [req.userId]);
+    `, [req.userId, JSON.stringify({ completedAt: new Date().toISOString() })]);
 
     res.json({
       success: true,

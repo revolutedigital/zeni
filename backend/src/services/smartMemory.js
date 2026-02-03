@@ -228,8 +228,8 @@ export async function cleanupOldMemory(userId, daysToKeep = 30) {
     await pool.query(`
       DELETE FROM chat_history
       WHERE user_id = $1
-        AND created_at < NOW() - INTERVAL '${daysToKeep} days'
-    `, [userId]);
+        AND created_at < NOW() - make_interval(days => $2)
+    `, [userId, parseInt(daysToKeep) || 30]);
 
     // Limpar resumos antigos
     await pool.query(`
