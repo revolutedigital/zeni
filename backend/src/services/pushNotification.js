@@ -14,6 +14,7 @@ import { logger } from './logger.js';
 // VAPID keys - OBRIGATÓRIO definir via variáveis de ambiente
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
+const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:support@zeni.app';
 
 // Flag para indicar se push notifications estão habilitadas
 let pushEnabled = false;
@@ -21,7 +22,7 @@ let pushEnabled = false;
 // Configurar webpush apenas se as keys estiverem definidas
 if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(
-    'mailto:contato@zeni.app',
+    VAPID_EMAIL,
     VAPID_PUBLIC_KEY,
     VAPID_PRIVATE_KEY
   );

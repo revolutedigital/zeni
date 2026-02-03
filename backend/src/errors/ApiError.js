@@ -170,6 +170,12 @@ export function errorHandler(err, req, res, _next) {
 
     const internalError = ApiError.internal();
     return res.status(500).json(internalError.toJSON());
+  }).catch(() => {
+    // Fallback caso o import do logger falhe - garantir resposta ao cliente
+    const internalError = ApiError.internal();
+    if (!res.headersSent) {
+      res.status(500).json(internalError.toJSON());
+    }
   });
 }
 

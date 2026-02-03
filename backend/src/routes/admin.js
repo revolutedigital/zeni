@@ -55,7 +55,9 @@ router.get('/analytics', async (req, res) => {
  */
 router.get('/analytics/dau', async (req, res) => {
   try {
-    const days = Math.min(Math.max(parseInt(req.query.days, 10) || 30, 1), 365);
+    let days = parseInt(req.query.days, 10);
+    if (isNaN(days)) days = 30;
+    days = Math.min(Math.max(days, 1), 365);
     const trend = await analytics.getDAUTrend(days);
     res.json(trend);
   } catch (error) {
@@ -69,7 +71,9 @@ router.get('/analytics/dau', async (req, res) => {
  */
 router.get('/analytics/features', async (req, res) => {
   try {
-    const days = Math.min(Math.max(parseInt(req.query.days, 10) || 30, 1), 365);
+    let days = parseInt(req.query.days, 10);
+    if (isNaN(days)) days = 30;
+    days = Math.min(Math.max(days, 1), 365);
     const usage = await analytics.getFeatureUsage(days);
     res.json(usage);
   } catch (error) {
@@ -83,8 +87,13 @@ router.get('/analytics/features', async (req, res) => {
  */
 router.get('/users', async (req, res) => {
   try {
-    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 100);
-    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+    let limit = parseInt(req.query.limit, 10);
+    if (isNaN(limit)) limit = 50;
+    limit = Math.min(Math.max(limit, 1), 100);
+
+    let offset = parseInt(req.query.offset, 10);
+    if (isNaN(offset)) offset = 0;
+    offset = Math.max(offset, 0);
 
     const result = await pool.query(`
       SELECT
@@ -108,7 +117,7 @@ router.get('/users', async (req, res) => {
 
     res.json({
       users: result.rows,
-      total: parseInt(countResult.rows[0].count, 10),
+      total: parseInt(countResult.rows[0]?.count, 10) || 0,
       limit,
       offset
     });
@@ -139,11 +148,15 @@ router.get('/revenue', async (req, res) => {
       business: 99.90
     };
 
-    const tiers = result.rows.map(row => ({
-      tier: row.subscription_tier || 'free',
-      userCount: parseInt(row.user_count),
-      mrr: parseInt(row.user_count) * (pricing[row.subscription_tier] || 0)
-    }));
+    const tiers = result.rows.map(row => {
+      const userCount = parseInt(row.user_count, 10) || 0;
+      const tier = row.subscription_tier || 'free';
+      return {
+        tier,
+        userCount,
+        mrr: userCount * (pricing[tier] || 0)
+      };
+    });
 
     const totalMRR = tiers.reduce((sum, t) => sum + t.mrr, 0);
     const totalUsers = tiers.reduce((sum, t) => sum + t.userCount, 0);
@@ -189,7 +202,7 @@ router.get('/health', async (req, res) => {
       timestamp: dbCheck.rows[0].now,
       tables: tables.rows.map(r => r.table_name),
       lastHourActivity: {
-        chatMessages: parseInt(recentChats.rows[0].count)
+        chatMessages: parseInt(recentChats.rows[0]?.count, 10) || 0
       }
     });
   } catch (error) {

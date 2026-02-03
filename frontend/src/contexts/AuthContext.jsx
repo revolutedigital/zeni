@@ -48,7 +48,9 @@ export function AuthProvider({ children }) {
       const data = await res.json()
       setOnboardingCompleted(data.completed)
     } catch (error) {
-      console.error('Erro ao verificar onboarding:', error)
+      if (import.meta.env.MODE !== 'production') {
+        console.error('Erro ao verificar onboarding:', error)
+      }
       setOnboardingCompleted(true) // Assume completed on error
     } finally {
       setIsLoading(false)

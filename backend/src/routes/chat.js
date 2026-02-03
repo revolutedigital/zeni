@@ -723,7 +723,14 @@ router.post('/', upload.single('image'), async (req, res) => {
 // Histórico de chat
 router.get('/history', async (req, res) => {
   try {
-    const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 200);
+    // Validar userId explicitamente (segurança adicional)
+    if (!req.userId) {
+      return res.status(401).json({ error: 'Não autorizado' });
+    }
+
+    let limit = parseInt(req.query.limit, 10);
+    if (isNaN(limit)) limit = 50;
+    limit = Math.min(Math.max(limit, 1), 200);
 
     const result = await pool.query(`
       SELECT * FROM chat_history

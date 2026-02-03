@@ -89,7 +89,8 @@ async function getOrCreateSummary(userId, messages) {
       return cached.rows[0].summary;
     }
   } catch (e) {
-    // Tabela pode não existir ainda
+    // Tabela pode não existir ainda - log para debugging
+    logger.debug({ err: e.message }, 'conversation_summaries table may not exist');
   }
 
   // Gerar novo resumo
@@ -121,7 +122,8 @@ Resumo conciso:`;
         VALUES ($1, $2, $3)
       `, [userId, summary, messages.length]);
     } catch (e) {
-      // Tabela pode não existir
+      // Tabela pode não existir - log para debugging
+      logger.debug({ err: e.message }, 'Failed to save summary - table may not exist');
     }
 
     return summary;
@@ -146,7 +148,8 @@ async function getUserFacts(userId) {
 
     return result.rows;
   } catch (e) {
-    // Tabela pode não existir
+    // Tabela pode não existir - log para debugging
+    logger.debug({ err: e.message }, 'user_facts table may not exist');
     return [];
   }
 }
